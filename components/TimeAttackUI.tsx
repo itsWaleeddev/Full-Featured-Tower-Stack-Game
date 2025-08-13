@@ -1,16 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Palette, Coins } from 'lucide-react-native';
 
 interface TimeAttackUIProps {
   timeRemaining: number;
   totalTime: number;
   score: number;
   combo: number;
+  gameStarted: boolean;
+  onStart: () => void;
+  coins?: number;
+  onThemePress?: () => void; 
 }
 
 export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
@@ -18,6 +24,10 @@ export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
   totalTime,
   score,
   combo,
+  gameStarted,
+  onStart,
+  coins = 0,
+  onThemePress,          
 }) => {
   const progress = timeRemaining / totalTime;
   const isLowTime = timeRemaining <= 10;
@@ -58,6 +68,38 @@ export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
     };
   });
 
+  if (!gameStarted) {
+    return (
+      <View style={styles.startScreen}>
+        <Text style={styles.titleText}>Time Attack Mode</Text>
+        <Text style={styles.instructionText}>
+          Stack as many blocks as you can{'\n'}before time runs out!
+        </Text>
+        
+        <TouchableOpacity style={styles.startButton} onPress={onStart}>
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.startButtonGradient}
+          >
+            <Text style={styles.startButtonText}>Start Time Attack</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <View style={styles.bottomControls}>
+          <View style={styles.coinsDisplay}>
+            <Coins size={20} color="#FFD700" />
+            <Text style={styles.coinsText}>{coins}</Text>
+          </View>
+          {onThemePress && (
+            <TouchableOpacity style={styles.themeButton} onPress={onThemePress}>
+              <Palette size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
@@ -85,6 +127,82 @@ export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
 };
 
 const styles = StyleSheet.create({
+  startScreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    zIndex: 100,
+  },
+  titleText: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  instructionText: {
+    fontSize: 18,
+    color: '#ccc',
+    textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 26,
+  },
+  startButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    shadowColor: '#667eea',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  startButtonGradient: {
+    paddingHorizontal: 50,
+    paddingVertical: 18,
+  },
+  startButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  bottomControls: {
+    position: 'absolute',
+    bottom: 60,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  coinsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  coinsText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  themeButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 12,
+    borderRadius: 20,
+  },
+
   container: {
     position: 'absolute',
     top: 60,

@@ -137,15 +137,21 @@ export const calculateScore = (
   return Math.floor((baseScore + comboBonus) * modeMultiplier);
 };
 
-export const getBackgroundColors = (towerHeight: number, themeId: string = 'default'): [string, string] => {
-  const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
-  return theme.backgroundColors;
+export const getBackgroundColors = (themeId: string = 'default'): readonly [string, string] => {
+  const theme = COLORS.themes[themeId as keyof typeof COLORS.themes];
+  if (!theme) {
+    return COLORS.themes.default.background;
+  }
+  return theme.background;
 };
 
-export const getBlockColors = (colorIndex: number, themeId: string = 'default'): [string, string] => {
-  const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
-  const safeIndex = colorIndex % theme.blockColors.length;
-  return theme.blockColors[safeIndex];
+export const getBlockColors = (colorIndex: number, themeId: string = 'default'): readonly [string, string] => {
+  const theme = COLORS.themes[themeId as keyof typeof COLORS.themes];
+  if (!theme) {
+    // Fallback to default theme if theme not found
+    return COLORS.themes.default.blocks[colorIndex % COLORS.themes.default.blocks.length];
+  }
+  return theme.blocks[colorIndex % theme.blocks.length];
 };
 
 export const generateDailyChallenge = (): import('../types/game').DailyChallenge => {

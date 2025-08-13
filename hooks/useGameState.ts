@@ -55,6 +55,7 @@ export const useGameState = () => {
           ...prev,
           gameOver: true,
           currentBlock: null,
+          gameStarted: false
         };
       }
 
@@ -80,6 +81,7 @@ export const useGameState = () => {
           combo: newCombo,
           tower_height: prev.tower_height + 1,
           gameOver: true,
+          gameStarted: false
         };
       }
 
@@ -123,6 +125,7 @@ export const useGameState = () => {
           timeRemaining: 0,
           gameOver: true,
           currentBlock: null,
+          gameStarted: false
         };
       }
 
@@ -144,7 +147,7 @@ export const useGameState = () => {
       tower_height: 1,
       currentBlock: null,
       timeRemaining: undefined,
-      level: undefined,
+      level: 1,
       rewardsGranted: false,  // reset flag here too
     }));
   }, []);

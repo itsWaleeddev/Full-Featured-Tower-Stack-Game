@@ -93,14 +93,14 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           ))}
         </ScrollView>
 
-        <TouchableOpacity style={styles.startButton} onPress={onClose}>
+        {/* <TouchableOpacity style={styles.startButton} onPress={onClose}>
           <LinearGradient
             colors={['#4facfe', '#00f2fe']}
             style={styles.startButtonGradient}
           >
             <Text style={styles.startButtonText}>Start Game</Text>
           </LinearGradient>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   container: {
     width: '90%',
     maxWidth: 400,
-    height: '80%',
+    height: '60%',
     borderRadius: 20,
     overflow: 'hidden',
   },

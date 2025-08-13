@@ -26,6 +26,7 @@ export const GameUI: React.FC<GameUIProps> = ({
   coins = 0,
   onThemePress,
 }) => {
+  
   const scoreAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [

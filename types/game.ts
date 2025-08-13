@@ -80,10 +80,12 @@ export interface DailyChallenge {
 export interface Theme {
   id: string;
   name: string;
-  backgroundColors: [string, string];
-  blockColors: [string, string][];
+  backgroundColors: readonly [string, string, ...string[]];
+  blockColors: readonly [string, string][];
   unlocked: boolean;
   cost: number;
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+  description?: string;
 }
 
 export interface ScoreRecord {

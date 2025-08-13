@@ -13,7 +13,7 @@ interface BackgroundProps {
 }
 
 export const Background: React.FC<BackgroundProps> = ({ towerHeight, themeId = 'default' }) => {
-  const [startColor, endColor] = getBackgroundColors(towerHeight, themeId);
+  const [startColor, endColor] = getBackgroundColors(themeId);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

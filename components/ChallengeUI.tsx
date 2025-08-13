@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
 import { Star } from 'lucide-react-native';
 import { ChallengeLevel } from '../types/game';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Palette, Coins } from 'lucide-react-native';
 
 interface ChallengeUIProps {
   level: ChallengeLevel;
@@ -13,6 +15,10 @@ interface ChallengeUIProps {
   score: number;
   combo: number;
   timeRemaining?: number;
+  gameStarted: boolean;
+  onStart: () => void;
+  coins?: number;
+  onThemePress?: () => void;
 }
 
 export const ChallengeUI: React.FC<ChallengeUIProps> = ({
@@ -21,7 +27,12 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
   score,
   combo,
   timeRemaining,
+  gameStarted,
+  onStart,
+  coins = 0,
+  onThemePress,
 }) => {
+
   const progress = Math.min(currentBlocks / level.targetBlocks, 1);
 
   const progressStyle = useAnimatedStyle(() => {
@@ -36,6 +47,39 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
     };
   });
 
+  if (!gameStarted) {
+    return (
+      <View style={styles.startScreen}>
+        <Text style={styles.titleText}>Challenge Mode</Text>
+        <Text style={styles.instructionText}>
+          Complete the target blocks to win the challenge!
+        </Text>
+
+        <TouchableOpacity style={styles.startButton} onPress={onStart}>
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.startButtonGradient}
+          >
+            <Text style={styles.startButtonText}>Start Challenge</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.bottomControls}>
+          <View style={styles.coinsDisplay}>
+            <Coins size={20} color="#FFD700" />
+            <Text style={styles.coinsText}>{coins}</Text>
+          </View>
+
+          {onThemePress && (
+            <TouchableOpacity style={styles.themeButton} onPress={onThemePress}>
+              <Palette size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -43,7 +87,7 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
           <Text style={styles.levelName}>{level.name}</Text>
           <Text style={styles.objective}>{level.objective}</Text>
         </View>
-        
+
         {timeRemaining !== undefined && (
           <View style={styles.timerContainer}>
             <Text style={styles.timerText}>{Math.ceil(timeRemaining)}s</Text>
@@ -58,7 +102,7 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
           </Text>
           <Text style={styles.scoreText}>Score: {score.toLocaleString()}</Text>
         </View>
-        
+
         <View style={styles.progressBarContainer}>
           <Animated.View style={[styles.progressBar, progressStyle]} />
         </View>
@@ -83,6 +127,81 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
 };
 
 const styles = StyleSheet.create({
+  startScreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    zIndex: 100,
+  },
+  titleText: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  instructionText: {
+    fontSize: 18,
+    color: '#ccc',
+    textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 26,
+  },
+  startButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    shadowColor: '#667eea',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  startButtonGradient: {
+    paddingHorizontal: 50,
+    paddingVertical: 18,
+  },
+  startButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  bottomControls: {
+    position: 'absolute',
+    bottom: 60,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  coinsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  coinsText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  themeButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 12,
+    borderRadius: 20,
+  },
   container: {
     position: 'absolute',
     top: 60,

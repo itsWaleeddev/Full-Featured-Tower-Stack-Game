@@ -16,6 +16,7 @@ import { DailyChallengeModal } from '../../components/DailyChallengeModal';
 import { ThemeSelector } from '../../components/ThemeSelector';
 import { useGameState } from '../../hooks/useGameState';
 import { useHighScore } from '../../hooks/useHighScore';
+import { useTheme } from '../../contexts/GameContext'; // Import the theme context
 import { GAME_CONFIG, ANIMATION_CONFIG, CHALLENGE_LEVELS, THEMES } from '../../constants/game';
 import { GameMode, ChallengeLevel, DailyChallenge } from '../../types/game';
 import { generateDailyChallenge } from '../../utils/gameLogic';
@@ -29,19 +30,23 @@ export default function StackTowerGame() {
     resetGame,
     updateCurrentBlockPosition,
     updateTimer,
-    addCoins,
-    spendCoins,
-    unlockTheme,
-    setCurrentTheme,
-    completeDailyChallenge,
     setGameState,
   } = useGameState();
 
   const { highScore, updateHighScore } = useHighScore();
-  //const animationRef = useRef<number>();
-  //const timerRef = useRef<NodeJS.Timeout>();
+
+  // Use global theme context instead of local state
+  const {
+    themeState,
+    spendCoins,
+    addCoins,
+    unlockTheme,              
+    setCurrentTheme,
+    updateThemeState
+  } = useTheme();
+
   const animationRef = useRef<number | undefined>(undefined);
-  const timerRef = useRef<number | null>(null);;
+  const timerRef = useRef<number | null>(null);
   const cameraY = useSharedValue(0);
   const cameraScale = useSharedValue(1);
 
@@ -55,7 +60,15 @@ export default function StackTowerGame() {
     const loadSavedData = async () => {
       const savedData = await loadGameData();
       if (Object.keys(savedData).length > 0) {
+        // Update game state
         setGameState(prev => ({ ...prev, ...savedData }));
+
+        // Update theme context with saved data
+        updateThemeState({
+          coins: savedData.coins || 0,
+          currentTheme: savedData.currentTheme || 'default',
+          unlockedThemes: savedData.unlockedThemes || ['default'],
+        });
       }
 
       // Check for daily challenge
@@ -73,17 +86,17 @@ export default function StackTowerGame() {
   // Save game data when relevant state changes
   useEffect(() => {
     saveGameData({
-      coins: gameState.coins,
-      currentTheme: gameState.currentTheme,
-      unlockedThemes: gameState.unlockedThemes,
+      coins: themeState.coins,
+      currentTheme: themeState.currentTheme,
+      unlockedThemes: themeState.unlockedThemes,
       unlockedSkins: gameState.unlockedSkins,
       dailyChallengeCompleted: gameState.dailyChallengeCompleted,
       lastDailyChallengeDate: gameState.lastDailyChallengeDate,
     });
   }, [
-    gameState.coins,
-    gameState.currentTheme,
-    gameState.unlockedThemes,
+    themeState.coins,
+    themeState.currentTheme,
+    themeState.unlockedThemes,
     gameState.dailyChallengeCompleted,
     gameState.lastDailyChallengeDate,
   ]);
@@ -171,13 +184,13 @@ export default function StackTowerGame() {
         const challengeMet = checkDailyChallengeCompletion();
         if (challengeMet) {
           addCoins(dailyChallenge.reward);
-          completeDailyChallenge();
+          // You'll need to add completeDailyChallenge to your game state or handle it separately
         }
       }
       // Mark rewards as granted so effect doesn't loop
       setGameState(prev => ({ ...prev, rewardsGranted: true }));
     }
-  }, [gameState.gameOver, gameState.score, updateHighScore, addCoins, completeDailyChallenge]);
+  }, [gameState.gameOver, gameState.score, updateHighScore, addCoins]);
 
   const checkDailyChallengeCompletion = (): boolean => {
     if (!dailyChallenge) return false;
@@ -186,7 +199,6 @@ export default function StackTowerGame() {
 
     if (blocksStacked >= dailyChallenge.targetBlocks) {
       if (dailyChallenge.perfectBlocksRequired) {
-        // This would need to be tracked during gameplay
         return gameState.combo >= dailyChallenge.perfectBlocksRequired;
       }
       return true;
@@ -214,7 +226,6 @@ export default function StackTowerGame() {
 
   const handleModeSelect = (mode: GameMode) => {
     if (mode === 'challenge') {
-      // Start with first challenge level
       const firstLevel = CHALLENGE_LEVELS[0];
       startGame(mode, firstLevel);
     } else {
@@ -231,7 +242,7 @@ export default function StackTowerGame() {
 
   const handleThemePurchase = (themeId: string) => {
     const theme = THEMES.find(t => t.id === themeId);
-    if (theme && gameState.coins >= theme.cost) {
+    if (theme && themeState.coins >= theme.cost) {
       spendCoins(theme.cost);
       unlockTheme(themeId);
       setCurrentTheme(themeId);
@@ -240,7 +251,7 @@ export default function StackTowerGame() {
 
   const handleDailyChallengeAccept = () => {
     if (dailyChallenge) {
-      startGame('classic'); // Start in classic mode for daily challenge
+      startGame('classic');
       setShowDailyChallenge(false);
     }
   };
@@ -252,22 +263,28 @@ export default function StackTowerGame() {
     return undefined;
   };
 
-  const currentTheme = THEMES.find(t => t.id === gameState.currentTheme) || THEMES[0];
+  // Filter themes to only show unlocked ones for ThemeSelector
+  const unlockedThemesList = THEMES.filter(theme =>
+    themeState.unlockedThemes.includes(theme.id)
+  ).map(theme => ({
+    ...theme,
+    unlocked: true, // All themes in this list are unlocked
+  }));
 
   return (
     <TouchableWithoutFeedback onPress={handleScreenTap}>
       <View style={styles.container}>
-        <Background towerHeight={gameState.tower_height} themeId={gameState.currentTheme} />
+        <Background towerHeight={gameState.tower_height} themeId={themeState.currentTheme} />
 
         <Animated.View style={[styles.gameArea, cameraStyle]}>
           {/* Static blocks */}
           {gameState.blocks.map((block) => (
-            <Block key={block.id} block={block} themeId={gameState.currentTheme} />
+            <Block key={block.id} block={block} themeId={themeState.currentTheme} />
           ))}
 
           {/* Moving block */}
           {gameState.currentBlock && (
-            <Block block={gameState.currentBlock} themeId={gameState.currentTheme} />
+            <Block block={gameState.currentBlock} themeId={themeState.currentTheme} />
           )}
         </Animated.View>
 
@@ -278,27 +295,35 @@ export default function StackTowerGame() {
             combo={gameState.combo}
             gameStarted={gameState.gameStarted}
             onStart={() => setShowModeSelector(true)}
-            coins={gameState.coins}
+            coins={themeState.coins}
             onThemePress={() => setShowThemeSelector(true)}
           />
         )}
 
-        {gameState.mode === 'timeAttack' && gameState.gameStarted && (
+        {gameState.mode === 'timeAttack' && (
           <TimeAttackUI
             timeRemaining={gameState.timeRemaining || 0}
             totalTime={GAME_CONFIG.TIME_ATTACK_DURATION}
             score={gameState.score}
             combo={gameState.combo}
+            gameStarted={gameState.gameStarted}
+            onStart={() => setShowModeSelector(true)}
+            coins={themeState.coins}
+            onThemePress={() => setShowThemeSelector(true)}
           />
         )}
 
-        {gameState.mode === 'challenge' && gameState.gameStarted && getCurrentChallengeLevel() && (
+        {gameState.mode === 'challenge' && getCurrentChallengeLevel() && (
           <ChallengeUI
             level={getCurrentChallengeLevel()!}
             currentBlocks={gameState.tower_height - 1}
             score={gameState.score}
             combo={gameState.combo}
             timeRemaining={gameState.timeRemaining}
+            gameStarted={gameState.gameStarted}
+            onStart={() => setShowModeSelector(true)}
+            coins={themeState.coins}
+            onThemePress={() => setShowThemeSelector(true)}
           />
         )}
 
@@ -320,12 +345,9 @@ export default function StackTowerGame() {
 
         <ThemeSelector
           visible={showThemeSelector}
-          themes={THEMES.map(theme => ({
-            ...theme,
-            unlocked: gameState.unlockedThemes.includes(theme.id),
-          }))}
-          currentTheme={gameState.currentTheme}
-          coins={gameState.coins}
+          themes={unlockedThemesList} // Only pass unlocked themes
+          currentTheme={themeState.currentTheme}
+          coins={themeState.coins}
           onThemeSelect={setCurrentTheme}
           onThemePurchase={handleThemePurchase}
           onClose={() => setShowThemeSelector(false)}

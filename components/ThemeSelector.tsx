@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Coins, Lock, Check } from 'lucide-react-native';
+import { Coins, Check } from 'lucide-react-native';
 import { Theme } from '../types/game';
 
 interface ThemeSelectorProps {
-  themes: Theme[];
+  themes: Theme[]; // This will now only contain unlocked themes
   visible: boolean;
   currentTheme: string;
   coins: number;
   onThemeSelect: (themeId: string) => void;
-  onThemePurchase: (themeId: string) => void;
+  onThemePurchase: (themeId: string) => void; // Keep this for consistency, but won't be used since all themes are unlocked
   onClose: () => void;
 }
 
@@ -20,7 +20,6 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   currentTheme,
   coins,
   onThemeSelect,
-  onThemePurchase,
   onClose,
 }) => {
   if (!visible) return null;
@@ -34,7 +33,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         />
         
         <View style={styles.header}>
-          <Text style={styles.title}>Themes</Text>
+          <Text style={styles.title}>Select Theme</Text>
           <View style={styles.coinsContainer}>
             <Coins size={20} color="#FFD700" />
             <Text style={styles.coinsText}>{coins}</Text>
@@ -45,73 +44,66 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         </View>
 
         <ScrollView style={styles.themesContainer} showsVerticalScrollIndicator={false}>
-          {themes.map((theme) => (
-            <TouchableOpacity
-              key={theme.id}
-              style={[
-                styles.themeCard,
-                currentTheme === theme.id && styles.selectedThemeCard,
-              ]}
-              onPress={() => {
-                if (theme.unlocked) {
-                  onThemeSelect(theme.id);
-                } else if (coins >= theme.cost) {
-                  onThemePurchase(theme.id);
-                }
-              }}
-              disabled={!theme.unlocked && coins < theme.cost}
-            >
-              <LinearGradient
-                colors={theme.backgroundColors}
-                style={styles.themePreview}
+          <Text style={styles.subtitle}>Your Unlocked Themes</Text>
+          {themes.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No themes unlocked yet!</Text>
+              <Text style={styles.emptySubtext}>Visit the shop to purchase new themes</Text>
+            </View>
+          ) : (
+            themes.map((theme) => (
+              <TouchableOpacity
+                key={theme.id}
+                style={[
+                  styles.themeCard,
+                  currentTheme === theme.id && styles.selectedThemeCard,
+                ]}
+                onPress={() => onThemeSelect(theme.id)}
               >
-                <View style={styles.blockPreview}>
-                  {theme.blockColors.slice(0, 4).map((colors, index) => (
-                    <LinearGradient
-                      key={index}
-                      colors={colors}
-                      style={styles.miniBlock}
-                    />
-                  ))}
-                </View>
-              </LinearGradient>
-              
-              <View style={styles.themeInfo}>
-                <Text style={styles.themeName}>{theme.name}</Text>
+                <LinearGradient
+                  colors={theme.backgroundColors}
+                  style={styles.themePreview}
+                >
+                  <View style={styles.blockPreview}>
+                    {theme.blockColors.slice(0, 4).map((colors, index) => (
+                      <LinearGradient
+                        key={index}
+                        colors={colors}
+                        style={styles.miniBlock}
+                      />
+                    ))}
+                  </View>
+                </LinearGradient>
                 
-                {currentTheme === theme.id ? (
-                  <View style={styles.selectedBadge}>
-                    <Check size={16} color="#4facfe" />
-                    <Text style={styles.selectedText}>Selected</Text>
-                  </View>
-                ) : theme.unlocked ? (
-                  <TouchableOpacity
-                    style={styles.selectButton}
-                    onPress={() => onThemeSelect(theme.id)}
-                  >
-                    <Text style={styles.selectButtonText}>Select</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.priceContainer}>
-                    {coins >= theme.cost ? (
-                      <TouchableOpacity
-                        style={styles.buyButton}
-                        onPress={() => onThemePurchase(theme.id)}
-                      >
-                        <Coins size={16} color="#FFD700" />
-                        <Text style={styles.buyButtonText}>{theme.cost}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.lockedContainer}>
-                        <Lock size={16} color="#666" />
-                        <Text style={styles.lockedText}>{theme.cost}</Text>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.themeInfo}>
+                  <Text style={styles.themeName}>{theme.name}</Text>
+                  <Text style={styles.themeDescription} numberOfLines={2}>
+                    {theme.description || 'A beautiful theme for your tower'}
+                  </Text>
+                  
+                  {currentTheme === theme.id ? (
+                    <View style={styles.selectedBadge}>
+                      <Check size={16} color="#4facfe" />
+                      <Text style={styles.selectedText}>Selected</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.selectButton}
+                      onPress={() => onThemeSelect(theme.id)}
+                    >
+                      <Text style={styles.selectButtonText}>Select</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+          
+          <View style={styles.shopPrompt}>
+            <Text style={styles.shopPromptText}>
+              Want more themes? Visit the Premium Shop!
+            </Text>
+          </View>
         </ScrollView>
       </View>
     </View>
@@ -150,6 +142,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+    flex: 1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 15,
+    textAlign: 'center',
   },
   coinsContainer: {
     flexDirection: 'row',
@@ -158,6 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
+    marginRight: 10,
   },
   coinsText: {
     color: '#FFD700',
@@ -182,6 +182,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
   },
   themeCard: {
     flexDirection: 'row',
@@ -221,7 +238,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 5,
+  },
+  themeDescription: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 10,
+    lineHeight: 16,
   },
   selectedBadge: {
     flexDirection: 'row',
@@ -245,32 +268,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  priceContainer: {
-    alignSelf: 'flex-start',
+  shopPrompt: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 172, 254, 0.3)',
   },
-  buyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  buyButtonText: {
-    color: '#FFD700',
+  shopPromptText: {
+    color: '#4facfe',
     fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 5,
-  },
-  lockedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  lockedText: {
-    color: '#666',
-    fontSize: 14,
-    marginLeft: 5,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
