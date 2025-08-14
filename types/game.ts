@@ -17,6 +17,7 @@ export interface GameState {
   blocks: Block[];
   score: number;
   combo: number;
+  perfectBlocks: number;
   gameOver: boolean;
   gameStarted: boolean;
   tower_height: number;
@@ -32,6 +33,14 @@ export interface GameState {
   dailyChallengeCompleted: boolean;
   lastDailyChallengeDate: string;
   rewardsGranted: boolean;  // <-- add this line
+  challengeProgress?: Record<number, ChallengeLevel>;
+  currentUnlockedLevel?: number;
+  highScores?: {
+    classic: number;
+    timeAttack: number;
+    challenge: number;
+  };
+  totalGamesPlayed?: number;
 }
 
 export interface Position {
@@ -64,6 +73,8 @@ export interface ChallengeLevel {
   specialBlocks?: Block['type'][];
   completed: boolean;
   stars: number;
+  perfectBlocksRequired?: number;
+  bestScore?: number;
 }
 
 export interface DailyChallenge {

@@ -199,24 +199,30 @@ export const calculateChallengeStars = (
   level: ChallengeLevel,
   score: number,
   blocksStacked: number,
-  perfectBlocks: number
+  perfectBlocks: number,
+  completed: boolean
 ): number => {
-  let stars = 0;
+  if (!completed) return 0;
 
-  // Base star for completion
-  if (blocksStacked >= level.targetBlocks) {
-    stars = 1;
-  }
+  let stars = 1; // Base star for completion
 
-  // Second star for good performance
-  if (perfectBlocks >= Math.floor(level.targetBlocks * 0.5)) {
+  // Calculate performance percentage
+  const perfectPercentage = blocksStacked > 0 ? perfectBlocks / blocksStacked : 0;
+
+  // Second star criteria (good performance)
+  if (perfectPercentage >= 0.4 || perfectBlocks >= Math.floor(level.targetBlocks * 0.5)) {
     stars = 2;
   }
 
-  // Third star for excellent performance
-  if (perfectBlocks >= Math.floor(level.targetBlocks * 0.8)) {
+  // Third star criteria (excellent performance)
+  if (perfectPercentage >= 0.7 || perfectBlocks >= Math.floor(level.targetBlocks * 0.8)) {
     stars = 3;
   }
 
-  return stars;
+  // Special requirements override
+  if (level.perfectBlocksRequired && perfectBlocks >= level.perfectBlocksRequired) {
+    stars = Math.max(stars, 3);
+  }
+
+  return Math.min(stars, 3);
 };

@@ -8,6 +8,7 @@ export const useGameState = () => {
     blocks: [createInitialBlock()],
     score: 0,
     combo: 0,
+    perfectBlocks: 0,
     gameOver: false,
     gameStarted: false,
     tower_height: 1,
@@ -20,7 +21,7 @@ export const useGameState = () => {
     unlockedSkins: [],
     dailyChallengeCompleted: false,
     lastDailyChallengeDate: '',
-    rewardsGranted: false,  // <--- add this flag
+    rewardsGranted: false,
   });
 
   const startGame = useCallback((mode: GameMode = 'classic', level?: ChallengeLevel) => {
@@ -32,6 +33,7 @@ export const useGameState = () => {
       blocks: [initialBlock],
       score: 0,
       combo: 0,
+      perfectBlocks: 0,
       gameOver: false,
       gameStarted: true,
       tower_height: 1,
@@ -39,7 +41,7 @@ export const useGameState = () => {
       mode,
       level: level?.id,
       timeRemaining: mode === 'timeAttack' ? GAME_CONFIG.TIME_ATTACK_DURATION : level?.timeLimit,
-      rewardsGranted: false,  // reset flag here
+      rewardsGranted: false,
     }));
   }, []);
 
@@ -67,7 +69,8 @@ export const useGameState = () => {
       };
 
       const newCombo = collision.isPerfect ? prev.combo + 1 : 0;
-      const scoreIncrease = calculateScore(prev.tower_height, newCombo, collision.isPerfect);
+      const newPerfectBlocks = collision.isPerfect ? prev.perfectBlocks + 1 : prev.perfectBlocks;
+      const scoreIncrease = calculateScore(prev.tower_height, newCombo, collision.isPerfect, prev.mode);
 
       // Check if challenge/time attack mode objectives are met
       const isComplete = checkModeCompletion(prev, newBlock);
@@ -79,6 +82,7 @@ export const useGameState = () => {
           currentBlock: null,
           score: prev.score + scoreIncrease,
           combo: newCombo,
+          perfectBlocks: newPerfectBlocks,
           tower_height: prev.tower_height + 1,
           gameOver: true,
           gameStarted: false
@@ -98,6 +102,7 @@ export const useGameState = () => {
         currentBlock: nextMovingBlock,
         score: prev.score + scoreIncrease,
         combo: newCombo,
+        perfectBlocks: newPerfectBlocks,
         tower_height: prev.tower_height + 1,
       };
     });
@@ -142,13 +147,14 @@ export const useGameState = () => {
       blocks: [createInitialBlock()],
       score: 0,
       combo: 0,
+      perfectBlocks: 0,
       gameOver: false,
       gameStarted: false,
       tower_height: 1,
       currentBlock: null,
       timeRemaining: undefined,
       level: 1,
-      rewardsGranted: false,  // reset flag here too
+      rewardsGranted: false,
     }));
   }, []);
 

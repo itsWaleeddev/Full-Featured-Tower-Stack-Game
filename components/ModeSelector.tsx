@@ -11,7 +11,7 @@ import Animated, {
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
-import { Infinity, Clock, Target, Lock, Palette, Coins, Settings, Zap, Trophy, Star } from 'lucide-react-native';
+import { Infinity, Clock, Target, Lock, Palette, Coins, Settings, Zap, Trophy, Star, Gamepad2 } from 'lucide-react-native';
 import { GameMode, GameModeConfig } from '../types/game';
 import { GAME_MODES, THEMES } from '../constants/game';
 
@@ -145,44 +145,62 @@ const AnimatedBlock = ({
   );
 };
 
-// Floating Particles Component
+// Enhanced Floating Particles Component
 const FloatingParticles = ({ themeId = 'default' }: { themeId?: string }) => {
-  const particles = Array.from({ length: 12 }, (_, i) => i);
+  const particles = Array.from({ length: 18 }, (_, i) => i);
   
   return (
     <View style={styles.particlesContainer}>
       {particles.map((particle) => {
         const ParticleComponent = () => {
           const translateY = useSharedValue(0);
+          const translateX = useSharedValue(0);
           const opacity = useSharedValue(0);
+          const scale = useSharedValue(0.5);
           
           useEffect(() => {
             const startAnimation = () => {
-              translateY.value = 0;
+              translateY.value = SCREEN_HEIGHT + 50;
+              translateX.value = 0;
               opacity.value = 0;
+              scale.value = 0.5;
               
               translateY.value = withDelay(
-                Math.random() * 3000,
-                withTiming(-SCREEN_HEIGHT, { duration: 8000 + Math.random() * 4000 })
+                Math.random() * 4000,
+                withTiming(-100, { duration: 12000 + Math.random() * 6000 })
+              );
+              
+              translateX.value = withDelay(
+                Math.random() * 4000,
+                withTiming((Math.random() - 0.5) * 100, { duration: 12000 + Math.random() * 6000 })
               );
               
               opacity.value = withDelay(
-                Math.random() * 3000,
+                Math.random() * 4000,
                 withSequence(
-                  withTiming(0.8, { duration: 1000 }),
-                  withTiming(0.8, { duration: 6000 }),
-                  withTiming(0, { duration: 1000 })
+                  withTiming(0.9, { duration: 1500 }),
+                  withTiming(0.9, { duration: 9000 }),
+                  withTiming(0, { duration: 1500 })
                 )
               );
+
+              scale.value = withDelay(
+                Math.random() * 4000,
+                withTiming(1 + Math.random() * 0.5, { duration: 2000 })
+              );
               
-              setTimeout(startAnimation, 8000 + Math.random() * 4000);
+              setTimeout(startAnimation, 12000 + Math.random() * 6000);
             };
             
             startAnimation();
           }, []);
 
           const animatedStyle = useAnimatedStyle(() => ({
-            transform: [{ translateY: translateY.value }],
+            transform: [
+              { translateY: translateY.value },
+              { translateX: translateX.value },
+              { scale: scale.value }
+            ],
             opacity: opacity.value,
           }));
 
@@ -197,10 +215,12 @@ const FloatingParticles = ({ themeId = 'default' }: { themeId?: string }) => {
             }
           };
 
+          const isSpecialParticle = particle % 6 === 0;
+
           return (
             <Animated.View
               style={[
-                styles.particle,
+                isSpecialParticle ? styles.specialParticle : styles.particle,
                 {
                   left: Math.random() * SCREEN_WIDTH,
                   backgroundColor: getParticleColor(),
@@ -246,10 +266,11 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
   onThemePress,
   showAsMainMenu = false,
   setSelectedMode,
-  currentTheme = 'default',
+  currentTheme = 'default'
 }) => {
   const [titleScale] = useState(useSharedValue(0));
   const [stackOffset] = useState(useSharedValue(50));
+  const [gamepadGlow] = useState(useSharedValue(0));
 
   if (!visible) return null;
 
@@ -257,6 +278,16 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     if (showAsMainMenu) {
       titleScale.value = withDelay(300, withSpring(1, { damping: 8, stiffness: 100 }));
       stackOffset.value = withDelay(600, withSpring(0, { damping: 10, stiffness: 80 }));
+      
+      // Gamepad glow animation
+      gamepadGlow.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1500 }),
+          withTiming(0.3, { duration: 1500 })
+        ),
+        -1,
+        true
+      );
     }
   }, [showAsMainMenu]);
 
@@ -276,9 +307,14 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     transform: [{ translateY: stackOffset.value }],
   }));
 
+  const gamepadAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: gamepadGlow.value * 0.8 + 0.2,
+    transform: [{ scale: 0.9 + gamepadGlow.value * 0.1 }],
+  }));
+
   return (
     <View style={overlayStyle}>
-      {/* Floating Particles */}
+      {/* Enhanced Floating Particles */}
       {showAsMainMenu && <FloatingParticles themeId={currentTheme} />}
       
       <View style={containerStyle}>
@@ -287,13 +323,13 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           <View style={styles.topBar}>
             <View style={styles.coinsContainer}>
               <LinearGradient
-                colors={['rgba(255, 215, 0, 0.3)', 'rgba(255, 215, 0, 0.1)']}
+                colors={['rgba(255, 215, 0, 0.4)', 'rgba(255, 215, 0, 0.15)']}
                 style={[
                   styles.coinsDisplay,
                   currentTheme === 'neon' && styles.neonGlow,
                 ]}
               >
-                <Coins size={22} color="#FFD700" />
+                <Coins size={24} color="#FFD700" />
                 <Text style={styles.coinsText}>{coins.toLocaleString()}</Text>
                 {currentTheme === 'neon' && (
                   <View style={[styles.glowEffect, { shadowColor: '#FFD700' }]} />
@@ -304,28 +340,69 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
             <View style={styles.topRightButtons}>
               <TouchableOpacity onPress={onThemePress} style={styles.settingsButton}>
                 <LinearGradient
-                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.05)']}
+                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']}
                   style={styles.settingsGradient}
                 >
-                  <Palette size={22} color={themeStyles.textPrimary} />
+                  <Palette size={24} color={themeStyles.textPrimary} />
                 </LinearGradient>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.settingsButton}>
                 <LinearGradient
-                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.05)']}
+                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']}
                   style={styles.settingsGradient}
                 >
-                  <Trophy size={22} color={themeStyles.accent} />
+                  <Trophy size={24} color={themeStyles.accent} />
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Game Title with Animated Tower */}
+        {/* Game Title with Animated Tower ABOVE text */}
         {showAsMainMenu && (
           <Animated.View style={[styles.titleSection, titleAnimatedStyle]}>
+            {/* Animated Block Stack Display - NOW ABOVE THE TEXT */}
+            <Animated.View style={[styles.blockStackContainer, stackAnimatedStyle]}>
+              <AnimatedBlock
+                width={120} //increased by 30
+                height={31} //increased by 5
+                x={0}
+                y={0}
+                colors={blockColors[0]}
+                delay={800}
+                themeId={currentTheme}
+              />
+              <AnimatedBlock
+                width={105}
+                height={31}
+                x={7.5}
+                y={-28}
+                colors={blockColors[1]}
+                delay={1000}
+                themeId={currentTheme}
+              />
+              <AnimatedBlock
+                width={125}
+                height={31}
+                x={-2.5}
+                y={-56}
+                colors={blockColors[2]}
+                delay={1200}
+                themeId={currentTheme}
+              />
+              <AnimatedBlock
+                width={95} 
+                height={31}
+                x={12.5}
+                y={-84}
+                colors={blockColors[3]}
+                delay={1400}
+                themeId={currentTheme}
+              />
+            </Animated.View>
+
+            {/* Title Text - NOW BELOW THE TOWER */}
             <View style={styles.titleContainer}>
               <Text style={[styles.gameTitle, { color: themeStyles.textPrimary }]}>
                 STACK
@@ -333,46 +410,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
               <Text style={[styles.gameTitleSecond, { color: themeStyles.accent }]}>
                 TOWER
               </Text>
-              
-              {/* Animated Block Stack Display */}
-              <Animated.View style={[styles.blockStackContainer, stackAnimatedStyle]}>
-                <AnimatedBlock
-                  width={80}
-                  height={24}
-                  x={0}
-                  y={0}
-                  colors={blockColors[0]}
-                  delay={800}
-                  themeId={currentTheme}
-                />
-                <AnimatedBlock
-                  width={70}
-                  height={24}
-                  x={5}
-                  y={-26}
-                  colors={blockColors[1]}
-                  delay={1000}
-                  themeId={currentTheme}
-                />
-                <AnimatedBlock
-                  width={85}
-                  height={24}
-                  x={-2.5}
-                  y={-52}
-                  colors={blockColors[2]}
-                  delay={1200}
-                  themeId={currentTheme}
-                />
-                <AnimatedBlock
-                  width={60}
-                  height={24}
-                  x={10}
-                  y={-78}
-                  colors={blockColors[3]}
-                  delay={1400}
-                  themeId={currentTheme}
-                />
-              </Animated.View>
             </View>
             
             <Text style={[styles.gameSubtitle, { color: themeStyles.textSecondary }]}>
@@ -391,7 +428,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           </View>
         )}
 
-        {/* Game Modes */}
+        {/* Game Modes - SMALLER CARDS */}
         <ScrollView 
           style={styles.modesContainer} 
           showsVerticalScrollIndicator={false}
@@ -415,7 +452,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                     isSelected
                       ? [themeStyles.accent, themeStyles.primary]
                       : mode.unlocked
-                      ? [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.05)']
+                      ? [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']
                       : ['rgba(100, 100, 100, 0.2)', 'rgba(60, 60, 60, 0.2)']
                   }
                   style={[
@@ -434,7 +471,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                         <>
                           <ModeIcon 
                             mode={mode.id} 
-                            size={42} 
+                            size={32} 
                             color={isSelected ? '#fff' : themeStyles.textPrimary} 
                           />
                           {isSelected && (
@@ -445,7 +482,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                           )}
                         </>
                       ) : (
-                        <Lock size={42} color="#666" />
+                        <Lock size={32} color="#666" />
                       )}
                     </View>
                     
@@ -460,8 +497,8 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                         </Text>
                         {mode.unlocked && index === 0 && (
                           <View style={styles.popularBadge}>
-                            <Star size={12} color="#FFD700" />
-                            <Text style={styles.popularText}>POPULAR</Text>
+                            <Star size={10} color="#FFD700" />
+                            <Text style={styles.popularText}>HOT</Text>
                           </View>
                         )}
                       </View>
@@ -470,7 +507,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                         { color: isSelected ? 'rgba(255, 255, 255, 0.9)' : themeStyles.textSecondary },
                         !mode.unlocked && styles.lockedText
                       ]}>
-                        {mode.unlocked ? mode.description : 'Locked'}
+                        {mode.unlocked ? mode.description : 'Locked - Coming Soon!'}
                       </Text>
                     </View>
 
@@ -481,7 +518,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                           colors={['#fff', 'rgba(255, 255, 255, 0.7)']}
                           style={styles.selectionDot}
                         />
-                        <Zap size={16} color="#fff" style={styles.selectionIcon} />
+                        <Zap size={14} color="#fff" style={styles.selectionIcon} />
                       </View>
                     )}
                   </View>
@@ -491,7 +528,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           })}
         </ScrollView>
 
-        {/* Enhanced Start Game Button */}
+        {/* Enhanced Start Game Button with Gaming Pad */}
         {showAsMainMenu && (
           <View style={styles.startSection}>
             <TouchableOpacity 
@@ -502,7 +539,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
               <LinearGradient
                 colors={selectedMode 
                   ? [themeStyles.accent, themeStyles.primary, themeStyles.accent] 
-                  : ['#666', '#444']
+                  : ['#666', '#444', '#666']
                 }
                 style={[
                   styles.startButtonGradient,
@@ -511,9 +548,22 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={[styles.startButtonText, selectedMode && styles.activeStartText]}>
-                  {selectedMode ? '🚀 START GAME' : 'SELECT MODE'}
-                </Text>
+                <View style={styles.startButtonContent}>
+                  {/* {selectedMode && (
+                    <Animated.View style={[styles.gamepadIcon, gamepadAnimatedStyle]}>
+                      <Gamepad2 size={22} color="#fff" />
+                    </Animated.View>
+                  )} */}
+                  <Text style={[styles.startButtonText, selectedMode && styles.activeStartText]}>
+                    {selectedMode ? 'START GAME' : 'SELECT A MODE'}
+                  </Text>
+                  {selectedMode && (
+                    <Animated.View style={[styles.gamepadIconRight, gamepadAnimatedStyle]}>
+                      <Gamepad2 size={22} color="#fff" />
+                    </Animated.View>
+                  )}
+                </View>
+                
                 {selectedMode && (
                   <View style={[
                     styles.startButtonGlow,
@@ -560,21 +610,28 @@ const styles = StyleSheet.create({
   mainMenuContainer: {
     flex: 1,
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 15, //20
+    paddingBottom: 20, //40
   },
   
-  // Particles
+  // Enhanced Particles
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
   particle: {
     position: 'absolute',
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    opacity: 0.6,
+    width: 2,
+    height: 2,
+    borderRadius: 1,
+    opacity: 0.7,
+  },
+  specialParticle: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.9,
   },
 
   // Top Bar
@@ -582,7 +639,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 30,
+    paddingBottom: 25,
     zIndex: 10,
   },
   coinsContainer: {
@@ -591,94 +648,106 @@ const styles = StyleSheet.create({
   coinsDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 28,
     alignSelf: 'flex-start',
     shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  coinsText: {
+    color: '#FFD700',
+    fontSize: 19,
+    fontWeight: '900',
+    marginLeft: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  topRightButtons: {
+    flexDirection: 'row',
+    gap: 10, //14
+  },
+  settingsButton: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  coinsText: {
-    color: '#FFD700',
-    fontSize: 18,
-    fontWeight: '800',
-    marginLeft: 8,
-  },
-  topRightButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  settingsButton: {
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
   settingsGradient: {
-    padding: 14,
-    borderRadius: 22,
+    padding: 16,
+    borderRadius: 24,
   },
 
-  // Title Section with Tower
+  // Title Section with Tower - REORGANIZED
   titleSection: {
     alignItems: 'center',
-    paddingBottom: 50,
+    paddingBottom: 10, //40
     zIndex: 10,
+    paddingTop:25
+  },
+  blockStackContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Space between tower and text
+    marginRight:25,
+    marginTop:30
   },
   titleContainer: {
     alignItems: 'center',
-    position: 'relative',
-    marginBottom: 20,
   },
   gameTitle: {
-    fontSize: 42,
+    fontSize: 46,
     fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 8,
+    letterSpacing: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 6 },
+    textShadowRadius: 12,
   },
   gameTitleSecond: {
-    fontSize: 42,
+    fontSize: 46,
     fontWeight: '900',
     textAlign: 'center',
-    letterSpacing: 4,
-    marginTop: -8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 8,
-  },
-  blockStackContainer: {
-    position: 'absolute',
-    top: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
+    letterSpacing: 5,
+    marginTop: -10,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 6 },
+    textShadowRadius: 12,
   },
   gameSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    opacity: 0.9,
-    fontWeight: '500',
-    letterSpacing: 0.5,
+    opacity: 0.85,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    margin: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 
   // Animated Blocks
   animatedBlock: {
     position: 'absolute',
-    borderRadius: 6,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 12,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 16,
   },
   blockGradient: {
     flex: 1,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   blockShine: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 6,
+    borderRadius: 8,
     opacity: 0.7,
   },
 
@@ -713,36 +782,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // Game Modes
+  // Game Modes - SMALLER SIZE
   modesContainer: {
     flex: 1,
     zIndex: 5,
   },
   modesContent: {
-    gap: 18,
+    gap: 12, // Reduced gap
     paddingBottom: 20,
   },
   modeCard: {
-    borderRadius: 18,
+    borderRadius: 16, // Slightly smaller radius
     overflow: 'hidden',
   },
   selectedModeCard: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 16,
   },
   lockedModeCard: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   modeCardGradient: {
-    paddingVertical: 22,
-    paddingHorizontal: 20,
+    paddingVertical: 16, // Reduced padding
+    paddingHorizontal: 18,
   },
   neonModeCard: {
     shadowColor: '#00ffff',
-    shadowOpacity: 0.6,
+    shadowOpacity: 0.7,
   },
   modeCardContent: {
     flexDirection: 'row',
@@ -750,20 +819,20 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   modeIconContainer: {
-    marginRight: 18,
-    width: 60,
+    marginRight: 16, // Reduced margin
+    width: 48, // Smaller icon container
     alignItems: 'center',
     position: 'relative',
   },
   selectedIconContainer: {
-    transform: [{ scale: 1.1 }],
+    transform: [{ scale: 1.15 }],
   },
   iconGlow: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    opacity: 0.2,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    opacity: 0.25,
   },
   modeInfo: {
     flex: 1,
@@ -771,46 +840,46 @@ const styles = StyleSheet.create({
   modeNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4, // Reduced margin
   },
   modeName: {
-    fontSize: 20,
+    fontSize: 18, // Smaller font
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   popularBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(255, 215, 0, 0.25)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 8,
+    borderRadius: 8,
+    marginLeft: 6,
   },
   popularText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: '#FFD700',
     marginLeft: 2,
   },
   modeDescription: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13, // Smaller font
+    lineHeight: 18,
     fontWeight: '500',
   },
   selectionIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 28, // Smaller indicator
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   selectionDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   selectionIcon: {
     position: 'absolute',
@@ -819,63 +888,82 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
-  // Enhanced Start Button
+  // Enhanced Start Button with Gaming Elements
   startSection: {
-    paddingTop: 30,
+    marginTop: 5, //25
     zIndex: 10,
   },
   startButton: {
-    borderRadius: 30,
+    borderRadius: 35,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 20,
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   startButtonGradient: {
-    paddingVertical: 20,
+    paddingVertical: 22,
     alignItems: 'center',
     position: 'relative',
   },
   neonStartButton: {
     shadowColor: '#00ffff',
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
+    shadowOpacity: 0.9,
+    shadowRadius: 25,
+  },
+  startButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gamepadIcon: {
+    marginRight: 12,
+  },
+  gamepadIconRight: {
+    marginLeft: 12,
   },
   startButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 1,
-  },
-  activeStartText: {
-    fontSize: 19,
-    fontWeight: '800',
+    letterSpacing: 1.5,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
+  },
+  activeStartText: {
+    fontSize: 20,
+    fontWeight: '900',
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
   },
   startButtonGlow: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    opacity: 0.3,
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
+    opacity: 0.4,
+    shadowOpacity: 0.9,
+    shadowRadius: 25,
   },
 
-  // Effects
+  // Enhanced Effects
   neonGlow: {
     shadowColor: '#FFD700',
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
+    shadowOpacity: 0.9,
+    shadowRadius: 20,
   },
   glowEffect: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    borderRadius: 25,
-    opacity: 0.3,
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
+    borderRadius: 28,
+    opacity: 0.4,
+    shadowOpacity: 0.9,
+    shadowRadius: 20,
   },
 });

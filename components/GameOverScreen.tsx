@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { RotateCcw, Home, Share, Trophy, Coins } from 'lucide-react-native';
+import { RotateCcw, Home, Share, Trophy, Coins, Star, ChevronRight } from 'lucide-react-native';
 import { GameMode } from '../types/game';
 
 interface GameOverScreenProps {
@@ -10,7 +10,11 @@ interface GameOverScreenProps {
   highScore: number;
   mode: GameMode;
   coinsEarned?: number;
+  challengeStars?: number;
+  challengeCompleted?: boolean;
+  hasNextLevel?: boolean;
   onPlayAgain: () => void;
+  onPlayNextLevel?: () => void;
   onModeSelect: () => void;
   onShare: () => void;
 }
@@ -21,11 +25,16 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   highScore,
   mode,
   coinsEarned = 0,
+  challengeStars = 0,
+  challengeCompleted = false,
+  hasNextLevel = false,
   onPlayAgain,
+  onPlayNextLevel,
   onModeSelect,
   onShare,
 }) => {
   const isNewHighScore = score > 0 && score >= highScore;
+  const isChallengeMode = mode === 'challenge';
   
   const getModeDisplayName = (mode: GameMode): string => {
     switch (mode) {
@@ -40,6 +49,41 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     }
   };
 
+  const renderStars = (stars: number) => {
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3].map((star) => (
+          <Star
+            key={star}
+            size={32}
+            color={star <= stars ? '#FFD700' : '#666'}
+            fill={star <= stars ? '#FFD700' : 'transparent'}
+          />
+        ))}
+      </View>
+    );
+  };
+
+  const getResultMessage = () => {
+    if (isChallengeMode) {
+      if (challengeCompleted) {
+        return challengeStars >= 3 ? 'Perfect!' : challengeStars >= 2 ? 'Great Job!' : 'Challenge Complete!';
+      } else {
+        return 'Challenge Failed';
+      }
+    }
+    return isNewHighScore ? 'New High Score!' : 'Game Over';
+  };
+
+  const getResultIcon = () => {
+    if (isChallengeMode && challengeCompleted) {
+      return <Trophy size={40} color="#FFD700" />;
+    } else if (isNewHighScore && !isChallengeMode) {
+      return <Trophy size={40} color="#FFD700" />;
+    }
+    return null;
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -51,30 +95,44 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           
           {/* Header */}
           <View style={styles.header}>
-            {isNewHighScore ? (
-              <>
-                <Trophy size={40} color="#FFD700" />
-                <Text style={styles.newRecordText}>New High Score!</Text>
-              </>
-            ) : (
-              <Text style={styles.gameOverText}>Game Over</Text>
-            )}
+            {getResultIcon()}
+            <Text style={[
+              styles.resultText,
+              { color: (isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore) ? '#FFD700' : '#fff' }
+            ]}>
+              {getResultMessage()}
+            </Text>
             <Text style={styles.modeText}>{getModeDisplayName(mode)}</Text>
           </View>
+
+          {/* Challenge Stars */}
+          {isChallengeMode && challengeCompleted && (
+            <View style={styles.challengeSection}>
+              {renderStars(challengeStars)}
+              <Text style={styles.starsText}>
+                {challengeStars}/3 Stars Earned!
+              </Text>
+            </View>
+          )}
 
           {/* Score Section */}
           <View style={styles.scoreSection}>
             <View style={styles.scoreContainer}>
               <Text style={styles.scoreLabel}>Final Score</Text>
-              <Text style={[styles.scoreValue, isNewHighScore && styles.newRecordScore]}>
+              <Text style={[
+                styles.scoreValue,
+                ((isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore)) && styles.highlightScore
+              ]}>
                 {score.toLocaleString()}
               </Text>
             </View>
             
-            <View style={styles.highScoreContainer}>
-              <Text style={styles.highScoreLabel}>High Score</Text>
-              <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
-            </View>
+            {!isChallengeMode && (
+              <View style={styles.highScoreContainer}>
+                <Text style={styles.highScoreLabel}>High Score</Text>
+                <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
+              </View>
+            )}
           </View>
 
           {/* Coins Earned */}
@@ -89,17 +147,40 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
           {/* Action Buttons */}
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={onPlayAgain}>
-              <LinearGradient
-                colors={['#4facfe', '#00f2fe']}
-                style={styles.buttonGradient}
-              >
-                <RotateCcw size={20} color="#fff" style={styles.buttonIcon} />
-                <Text style={styles.primaryButtonText}>Play Again</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            {/* Primary action - different for challenge mode */}
+            {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel ? (
+              <TouchableOpacity style={styles.primaryButton} onPress={onPlayNextLevel}>
+                <LinearGradient
+                  colors={['#4CAF50', '#45A049']}
+                  style={styles.buttonGradient}
+                >
+                  <ChevronRight size={20} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.primaryButtonText}>Next Level</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.primaryButton} onPress={onPlayAgain}>
+                <LinearGradient
+                  colors={['#4facfe', '#00f2fe']}
+                  style={styles.buttonGradient}
+                >
+                  <RotateCcw size={20} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.primaryButtonText}>
+                    {isChallengeMode && !challengeCompleted ? 'Try Again' : 'Play Again'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
+            {/* Secondary buttons */}
             <View style={styles.secondaryButtons}>
+              {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel && (
+                <TouchableOpacity style={styles.secondaryButton} onPress={onPlayAgain}>
+                  <RotateCcw size={18} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity style={styles.secondaryButton} onPress={onModeSelect}>
                 <Home size={18} color="#fff" />
                 <Text style={styles.secondaryButtonText}>Mode Select</Text>
@@ -139,22 +220,29 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 20,
   },
-  gameOverText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  newRecordText: {
+  resultText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFD700',
     marginTop: 10,
     marginBottom: 5,
   },
   modeText: {
     fontSize: 16,
     color: '#ccc',
+  },
+  challengeSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  starsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFD700',
   },
   scoreSection: {
     width: '100%',
@@ -175,7 +263,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  newRecordScore: {
+  highlightScore: {
     color: '#FFD700',
   },
   highScoreContainer: {

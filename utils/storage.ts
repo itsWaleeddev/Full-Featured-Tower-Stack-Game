@@ -32,6 +32,10 @@ export const saveGameData = async (gameData: Partial<GameState>): Promise<void> 
       unlockedSkins: gameData.unlockedSkins || [],
       dailyChallengeCompleted: gameData.dailyChallengeCompleted || false,
       lastDailyChallengeDate: gameData.lastDailyChallengeDate || '',
+      challengeProgress: gameData.challengeProgress || {},
+      currentUnlockedLevel: gameData.currentUnlockedLevel || 1,
+      highScores: gameData.highScores || { classic: 0, timeAttack: 0, challenge: 0 },
+      totalGamesPlayed: gameData.totalGamesPlayed || 0,
     };
     
     await AsyncStorage.setItem(GAME_DATA_KEY, JSON.stringify(dataToSave));
