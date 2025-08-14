@@ -12,15 +12,19 @@ import { TimeAttackUI } from '../../components/TimeAttackUI';
 import { ChallengeUI } from '../../components/ChallengeUI';
 import { GameOverScreen } from '../../components/GameOverScreen';
 import { ModeSelector } from '../../components/ModeSelector';
+import { PauseMenu } from '../../components/PauseMenu';
 import { DailyChallengeModal } from '../../components/DailyChallengeModal';
 import { ThemeSelector } from '../../components/ThemeSelector';
 import { useGameState } from '../../hooks/useGameState';
 import { useHighScore } from '../../hooks/useHighScore';
-import { useTheme } from '../../contexts/GameContext'; // Import the theme context
+import { useTheme } from '../../contexts/GameContext';
 import { GAME_CONFIG, ANIMATION_CONFIG, CHALLENGE_LEVELS, THEMES } from '../../constants/game';
 import { GameMode, ChallengeLevel, DailyChallenge } from '../../types/game';
 import { generateDailyChallenge } from '../../utils/gameLogic';
 import { saveGameData, loadGameData, saveScore } from '../../utils/storage';
+
+// Game flow states
+type GameFlow = 'mode_select' | 'playing' | 'paused' | 'game_over';
 
 export default function StackTowerGame() {
   const {
@@ -34,36 +38,37 @@ export default function StackTowerGame() {
   } = useGameState();
 
   const { highScore, updateHighScore } = useHighScore();
-
-  // Use global theme context instead of local state
   const {
     themeState,
     spendCoins,
     addCoins,
-    unlockTheme,              
+    unlockTheme,
     setCurrentTheme,
     updateThemeState
   } = useTheme();
 
+  // Refs and animated values
   const animationRef = useRef<number | undefined>(undefined);
   const timerRef = useRef<number | null>(null);
   const cameraY = useSharedValue(0);
   const cameraScale = useSharedValue(1);
 
-  const [showModeSelector, setShowModeSelector] = useState(false);
+  // UI State
+  const [gameFlow, setGameFlow] = useState<GameFlow>('mode_select');
+  const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
+  const [selectedLevel, setSelectedLevel] = useState<ChallengeLevel | undefined>(undefined);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [dailyChallenge, setDailyChallenge] = useState<DailyChallenge | null>(null);
   const [showDailyChallenge, setShowDailyChallenge] = useState(false);
+  const [coinsEarnedThisGame, setCoinsEarnedThisGame] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Load saved game data on mount
   useEffect(() => {
     const loadSavedData = async () => {
       const savedData = await loadGameData();
       if (Object.keys(savedData).length > 0) {
-        // Update game state
         setGameState(prev => ({ ...prev, ...savedData }));
-
-        // Update theme context with saved data
         updateThemeState({
           coins: savedData.coins || 0,
           currentTheme: savedData.currentTheme || 'default',
@@ -101,15 +106,30 @@ export default function StackTowerGame() {
     gameState.lastDailyChallengeDate,
   ]);
 
+  // Handle game state changes and flow transitions
+  useEffect(() => {
+    if (gameState.gameStarted && !gameState.gameOver && !isPaused) {
+      setGameFlow('playing');
+    } else if (gameState.gameStarted && !gameState.gameOver && isPaused) {
+      setGameFlow('paused');
+    } else if (gameState.gameOver) {
+      setGameFlow('game_over');
+      setIsPaused(false); // Reset pause state when game ends
+    } else {
+      setGameFlow('mode_select');
+      setIsPaused(false); // Reset pause state when returning to menu
+    }
+  }, [gameState.gameStarted, gameState.gameOver, isPaused]);
+
   // Timer for time attack mode
   useEffect(() => {
-    if (gameState.mode === 'timeAttack' && gameState.gameStarted && !gameState.gameOver) {
+    if (gameState.mode === 'timeAttack' && gameState.gameStarted && !gameState.gameOver && !isPaused) {
       timerRef.current = setInterval(updateTimer, 1000);
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
-  }, [gameState.mode, gameState.gameStarted, gameState.gameOver, updateTimer]);
+  }, [gameState.mode, gameState.gameStarted, gameState.gameOver, isPaused, updateTimer]);
 
   // Animate moving block
   useEffect(() => {
@@ -136,7 +156,7 @@ export default function StackTowerGame() {
 
       updateCurrentBlockPosition(newX, newDirection);
 
-      if (gameState.gameStarted && !gameState.gameOver) {
+      if (gameState.gameStarted && !gameState.gameOver && !isPaused) {
         animationRef.current = requestAnimationFrame(animateBlock);
       }
     };
@@ -148,15 +168,68 @@ export default function StackTowerGame() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, updateCurrentBlockPosition]);
+  }, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, isPaused, updateCurrentBlockPosition]);
 
   // Camera animation based on tower height
-  useEffect(() => {
-    const targetY = -gameState.tower_height * ANIMATION_CONFIG.CAMERA_PAN_FACTOR;
-    const targetScale = Math.max(0.7, 1 - gameState.tower_height * ANIMATION_CONFIG.CAMERA_SCALE_FACTOR);
+  // useEffect(() => {
+  //   const blockHeight = 40; // Adjust this to match your actual block height
+  //   const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
+  //   const halfScreenHeight = screenHeight / 2;
 
-    cameraY.value = withTiming(targetY, { duration: 800 });
-    cameraScale.value = withTiming(targetScale, { duration: 800 });
+  //   // Calculate current tower height in pixels
+  //   const currentTowerHeightPixels = gameState.tower_height * blockHeight;
+
+  //   let targetY = 0;
+  //   let targetScale = 1;
+
+  //   // When tower reaches half screen height, start moving it down
+  //   if (currentTowerHeightPixels > halfScreenHeight) {
+  //     // Move the entire stack down so top blocks remain visible
+  //     const excessHeight = currentTowerHeightPixels - halfScreenHeight;
+  //     // Instead of moving camera up, move the game area down
+  //     targetY = excessHeight;
+
+  //     // Optional: Scale down slightly
+  //     targetScale = Math.max(0.8, 1 - (excessHeight / screenHeight) * 0.2);
+  //   }
+
+  //   cameraY.value = withTiming(targetY, { duration: 800 });
+  //   cameraScale.value = withTiming(targetScale, { duration: 800 });
+  // }, [gameState.tower_height]);
+
+  //more slower version
+  useEffect(() => {
+    const blockHeight = 40; // Adjust this to match your actual block height
+    const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
+    const halfScreenHeight = screenHeight / 2;
+
+    // Calculate current tower height in pixels
+    const currentTowerHeightPixels = gameState.tower_height * blockHeight;
+
+    let targetY = 0;
+    let targetScale = 1;
+
+    // When tower reaches half screen height, start moving it down slowly
+    if (currentTowerHeightPixels > halfScreenHeight) {
+      // Move the entire stack down slowly - only move a fraction of the excess height
+      const excessHeight = currentTowerHeightPixels - halfScreenHeight;
+
+      // Slow movement: only move down by 30% of the excess height
+      // This creates a gradual downward drift as the tower grows
+      const slowMovementFactor = 0.5; // Adjust this value to control speed (0.1 = very slow, 0.5 = moderate)
+      targetY = excessHeight * slowMovementFactor;
+
+      // Optional: Very subtle scale adjustment
+      targetScale = Math.max(0.9, 1 - (excessHeight / screenHeight) * 0.1);
+    }
+
+    // Slower, smoother animation duration for gradual movement
+    cameraY.value = withTiming(targetY, {
+      duration: 1000 // Increased from 800 for smoother, slower movement 1200
+    });
+    cameraScale.value = withTiming(targetScale, {
+      duration: 1000
+    });
   }, [gameState.tower_height]);
 
   // Update high score and save score when game ends
@@ -177,6 +250,7 @@ export default function StackTowerGame() {
       const coinsEarned = Math.floor(gameState.score / 1000) + gameState.combo;
       if (coinsEarned > 0) {
         addCoins(coinsEarned);
+        setCoinsEarnedThisGame(coinsEarned);
       }
 
       // Check daily challenge completion
@@ -184,17 +258,17 @@ export default function StackTowerGame() {
         const challengeMet = checkDailyChallengeCompletion();
         if (challengeMet) {
           addCoins(dailyChallenge.reward);
-          // You'll need to add completeDailyChallenge to your game state or handle it separately
+          setCoinsEarnedThisGame(prev => prev + dailyChallenge.reward);
         }
       }
-      // Mark rewards as granted so effect doesn't loop
+
+      // Mark rewards as granted
       setGameState(prev => ({ ...prev, rewardsGranted: true }));
     }
   }, [gameState.gameOver, gameState.score, updateHighScore, addCoins]);
 
   const checkDailyChallengeCompletion = (): boolean => {
     if (!dailyChallenge) return false;
-
     const blocksStacked = gameState.tower_height - 1;
 
     if (blocksStacked >= dailyChallenge.targetBlocks) {
@@ -203,7 +277,6 @@ export default function StackTowerGame() {
       }
       return true;
     }
-
     return false;
   };
 
@@ -216,28 +289,87 @@ export default function StackTowerGame() {
     };
   });
 
+  // Game flow handlers
+  const handleModeSelect = (mode: GameMode) => {
+    setSelectedMode(mode);
+
+    if (mode === 'challenge') {
+      const firstLevel = CHALLENGE_LEVELS[0];
+      setSelectedLevel(firstLevel);
+      startGame(mode, firstLevel);
+    } else {
+      setSelectedLevel(undefined);
+      startGame(mode);
+    }
+  };
+
+  const handlePlayAgain = () => {
+    // Reset camera
+    cameraY.value = withTiming(0, { duration: 500 });
+    cameraScale.value = withTiming(1, { duration: 500 });
+
+    // Reset coins earned counter
+    setCoinsEarnedThisGame(0);
+
+    // Start same game mode
+    if (selectedMode === 'challenge' && selectedLevel) {
+      startGame(selectedMode, selectedLevel);
+    } else {
+      startGame(selectedMode);
+    }
+  };
+
+  const handleBackToModeSelect = () => {
+    // Reset everything
+    resetGame();
+    cameraY.value = withTiming(0, { duration: 500 });
+    cameraScale.value = withTiming(1, { duration: 500 });
+    setCoinsEarnedThisGame(0);
+    setGameFlow('mode_select');
+  };
+
   const handleScreenTap = () => {
-    if (!gameState.gameStarted) {
-      setShowModeSelector(true);
-    } else if (gameState.currentBlock && gameState.currentBlock.isMoving && !gameState.gameOver) {
+    if (gameFlow === 'playing' && gameState.currentBlock && gameState.currentBlock.isMoving && !isPaused) {
       dropBlock();
     }
   };
 
-  const handleModeSelect = (mode: GameMode) => {
-    if (mode === 'challenge') {
-      const firstLevel = CHALLENGE_LEVELS[0];
-      startGame(mode, firstLevel);
-    } else {
-      startGame(mode);
-    }
-    setShowModeSelector(false);
+  // Pause/Resume handlers
+  const handlePause = () => {
+    setIsPaused(true);
   };
 
-  const handleRestart = () => {
+  const handleResume = () => {
+    setIsPaused(false);
+  };
+
+  const handlePauseRestart = () => {
+    // Reset camera
+    cameraY.value = withTiming(0, { duration: 500 });
+    cameraScale.value = withTiming(1, { duration: 500 });
+
+    // Reset coins earned counter
+    setCoinsEarnedThisGame(0);
+
+    // Reset pause state
+    setIsPaused(false);
+
+    // Start same game mode
+    if (selectedMode === 'challenge' && selectedLevel) {
+      startGame(selectedMode, selectedLevel);
+    } else {
+      startGame(selectedMode);
+    }
+  };
+
+  const handlePauseHome = () => {
+    // Reset everything
     resetGame();
     cameraY.value = withTiming(0, { duration: 500 });
     cameraScale.value = withTiming(1, { duration: 500 });
+    setCoinsEarnedThisGame(0);
+    setIsPaused(false);
+    setGameFlow('mode_select');
   };
 
   const handleThemePurchase = (themeId: string) => {
@@ -251,6 +383,7 @@ export default function StackTowerGame() {
 
   const handleDailyChallengeAccept = () => {
     if (dailyChallenge) {
+      setSelectedMode('classic');
       startGame('classic');
       setShowDailyChallenge(false);
     }
@@ -263,13 +396,55 @@ export default function StackTowerGame() {
     return undefined;
   };
 
-  // Filter themes to only show unlocked ones for ThemeSelector
   const unlockedThemesList = THEMES.filter(theme =>
     themeState.unlockedThemes.includes(theme.id)
   ).map(theme => ({
     ...theme,
-    unlocked: true, // All themes in this list are unlocked
+    unlocked: true,
   }));
+
+  const renderGameUI = () => {
+    const commonProps = {
+      gameStarted: true, // Always true during playing state
+      onPause: handlePause,
+    };
+
+    switch (gameState.mode) {
+      case 'timeAttack':
+        return (
+          <TimeAttackUI
+            timeRemaining={gameState.timeRemaining || 0}
+            totalTime={GAME_CONFIG.TIME_ATTACK_DURATION}
+            score={gameState.score}
+            combo={gameState.combo}
+            {...commonProps}
+          />
+        );
+      case 'challenge':
+        const challengeLevel = getCurrentChallengeLevel();
+        if (challengeLevel) {
+          return (
+            <ChallengeUI
+              level={challengeLevel}
+              currentBlocks={gameState.tower_height - 1}
+              score={gameState.score}
+              combo={gameState.combo}
+              timeRemaining={gameState.timeRemaining}
+              {...commonProps}
+            />
+          );
+        }
+        break;
+      default:
+        return (
+          <GameUI
+            score={gameState.score}
+            combo={gameState.combo}
+            {...commonProps}
+          />
+        );
+    }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={handleScreenTap}>
@@ -288,64 +463,47 @@ export default function StackTowerGame() {
           )}
         </Animated.View>
 
-        {/* UI based on game mode */}
-        {gameState.mode === 'classic' && (
-          <GameUI
-            score={gameState.score}
-            combo={gameState.combo}
-            gameStarted={gameState.gameStarted}
-            onStart={() => setShowModeSelector(true)}
+        {/* Render UI based on game flow */}
+        {gameFlow === 'mode_select' && (
+          <ModeSelector
+            visible={true}
+            selectedMode={selectedMode}
+            onModeSelect={handleModeSelect}
+            onClose={() => { }} // No close needed since this is the main state
             coins={themeState.coins}
             onThemePress={() => setShowThemeSelector(true)}
+            showAsMainMenu={true}
+            setSelectedMode={setSelectedMode}
           />
         )}
 
-        {gameState.mode === 'timeAttack' && (
-          <TimeAttackUI
-            timeRemaining={gameState.timeRemaining || 0}
-            totalTime={GAME_CONFIG.TIME_ATTACK_DURATION}
-            score={gameState.score}
-            combo={gameState.combo}
-            gameStarted={gameState.gameStarted}
-            onStart={() => setShowModeSelector(true)}
-            coins={themeState.coins}
-            onThemePress={() => setShowThemeSelector(true)}
+        {gameFlow === 'playing' && renderGameUI()}
+
+        {gameFlow === 'paused' && (
+          <PauseMenu
+            visible={true}
+            onResume={handleResume}
+            onRestart={handlePauseRestart}
+            onHome={handlePauseHome}
           />
         )}
 
-        {gameState.mode === 'challenge' && getCurrentChallengeLevel() && (
-          <ChallengeUI
-            level={getCurrentChallengeLevel()!}
-            currentBlocks={gameState.tower_height - 1}
+        {gameFlow === 'game_over' && (
+          <GameOverScreen
+            visible={true}
             score={gameState.score}
-            combo={gameState.combo}
-            timeRemaining={gameState.timeRemaining}
-            gameStarted={gameState.gameStarted}
-            onStart={() => setShowModeSelector(true)}
-            coins={themeState.coins}
-            onThemePress={() => setShowThemeSelector(true)}
+            highScore={highScore}
+            mode={gameState.mode}
+            coinsEarned={coinsEarnedThisGame}
+            onPlayAgain={handlePlayAgain}
+            onModeSelect={handleBackToModeSelect}
+            onShare={() => {/* Implement sharing */ }}
           />
         )}
-
-        <GameOverScreen
-          visible={gameState.gameOver}
-          score={gameState.score}
-          highScore={highScore}
-          mode={gameState.mode}
-          onRestart={handleRestart}
-          onShare={() => {/* Implement sharing */ }}
-        />
-
-        <ModeSelector
-          visible={showModeSelector}
-          selectedMode={gameState.mode}
-          onModeSelect={handleModeSelect}
-          onClose={() => setShowModeSelector(false)}
-        />
 
         <ThemeSelector
           visible={showThemeSelector}
-          themes={unlockedThemesList} // Only pass unlocked themes
+          themes={unlockedThemesList}
           currentTheme={themeState.currentTheme}
           coins={themeState.coins}
           onThemeSelect={setCurrentTheme}

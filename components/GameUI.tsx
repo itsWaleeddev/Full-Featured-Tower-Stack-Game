@@ -5,26 +5,20 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Palette, Coins } from 'lucide-react-native';
-import { GAME_CONFIG } from '../constants/game';
+import { Pause } from 'lucide-react-native';
 
 interface GameUIProps {
   score: number;
   combo: number;
   gameStarted: boolean;
-  onStart: () => void;
-  coins?: number;
-  onThemePress?: () => void;
+  onPause: () => void;
 }
 
 export const GameUI: React.FC<GameUIProps> = ({
   score,
   combo,
   gameStarted,
-  onStart,
-  coins = 0,
-  onThemePress,
+  onPause,
 }) => {
   
   const scoreAnimatedStyle = useAnimatedStyle(() => {
@@ -48,100 +42,41 @@ export const GameUI: React.FC<GameUIProps> = ({
     };
   });
 
-  if (!gameStarted) {
-    return (
-      <View style={styles.startScreen}>
-        <Text style={styles.titleText}>Stack Tower</Text>
-        <Text style={styles.instructionText}>Tap to drop blocks{'\n'}Stack them perfectly for bonus points!</Text>
-        
-        <TouchableOpacity style={styles.startButton} onPress={onStart}>
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.startButtonGradient}
-          >
-            <Text style={styles.startButtonText}>Start Game</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-        
-        <View style={styles.bottomControls}>
-          <View style={styles.coinsDisplay}>
-            <Coins size={20} color="#FFD700" />
-            <Text style={styles.coinsText}>{coins}</Text>
-          </View>
-          
-          {onThemePress && (
-            <TouchableOpacity style={styles.themeButton} onPress={onThemePress}>
-              <Palette size={24} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.gameUI}>
-      <Animated.View style={[styles.scoreContainer, scoreAnimatedStyle]}>
-        <Text style={styles.scoreLabel}>Score</Text>
-        <Text style={styles.scoreValue}>{score.toLocaleString()}</Text>
-      </Animated.View>
-      
-      <Animated.View style={[styles.comboContainer, comboAnimatedStyle]}>
-        <Text style={styles.comboText}>COMBO x{combo}</Text>
-      </Animated.View>
+      {/* Top UI */}
+      <View style={styles.topUI}>
+        <Animated.View style={[styles.scoreContainer, scoreAnimatedStyle]}>
+          <Text style={styles.scoreLabel}>Score</Text>
+          <Text style={styles.scoreValue}>{score.toLocaleString()}</Text>
+        </Animated.View>
+        
+        <Animated.View style={[styles.comboContainer, comboAnimatedStyle]}>
+          <Text style={styles.comboText}>COMBO x{combo}</Text>
+        </Animated.View>
+      </View>
+
+      {/* Bottom Controls */}
+      <View style={styles.bottomControls}>
+        <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
+          <Pause size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  startScreen: {
+  gameUI: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    zIndex: 100,
+    zIndex: 10,
+    pointerEvents: 'box-none',
   },
-  titleText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  instructionText: {
-    fontSize: 18,
-    color: '#ccc',
-    textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 26,
-  },
-  startButton: {
-    borderRadius: 25,
-    overflow: 'hidden',
-    shadowColor: '#667eea',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  startButtonGradient: {
-    paddingHorizontal: 50,
-    paddingVertical: 18,
-  },
-  startButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  gameUI: {
+  topUI: {
     position: 'absolute',
     top: 60,
     left: 20,
@@ -149,7 +84,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    zIndex: 10,
   },
   scoreContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -187,24 +121,10 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  coinsDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  coinsText: {
-    color: '#FFD700',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 5,
-  },
-  themeButton: {
+  pauseButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     padding: 12,
     borderRadius: 20,

@@ -45,7 +45,7 @@ export const createNewBlock = (
   // Adjust properties based on block type
   let friction = 1;
   let weight = 1;
-  
+
   switch (blockType) {
     case 'slippery':
       friction = 0.7;
@@ -79,9 +79,9 @@ export const createNewBlock = (
 export const calculateCollision = (
   movingBlock: Block,
   staticBlock: Block
-): { 
-  newWidth: number; 
-  newX: number; 
+): {
+  newWidth: number;
+  newX: number;
   isPerfect: boolean;
   slicedWidth: number;
 } => {
@@ -92,7 +92,7 @@ export const calculateCollision = (
   );
 
   const overlapWidth = Math.max(0, rightEdge - leftEdge);
-  
+
   // Adjust perfect threshold based on block type
   let perfectThreshold = GAME_CONFIG.PERFECT_THRESHOLD;
   if (movingBlock.type === 'slippery') {
@@ -100,7 +100,7 @@ export const calculateCollision = (
   } else if (movingBlock.type === 'heavy') {
     perfectThreshold *= 0.8; // Easier to get perfect with heavy blocks
   }
-  
+
   const isPerfect = Math.abs(movingBlock.x - staticBlock.x) <= perfectThreshold;
   const slicedWidth = movingBlock.width - overlapWidth;
 
@@ -119,13 +119,13 @@ export const calculateScore = (
   mode: GameMode = 'classic'
 ): number => {
   let baseScore = GAME_CONFIG.BASE_SCORE + level * 50;
-  
+
   if (isPerfect) {
     baseScore *= 2;
   }
-  
+
   const comboBonus = combo * GAME_CONFIG.COMBO_MULTIPLIER;
-  
+
   // Mode-specific multipliers
   let modeMultiplier = 1;
   if (mode === 'timeAttack') {
@@ -133,7 +133,7 @@ export const calculateScore = (
   } else if (mode === 'challenge') {
     modeMultiplier = 1.2;
   }
-  
+
   return Math.floor((baseScore + comboBonus) * modeMultiplier);
 };
 
@@ -202,21 +202,21 @@ export const calculateChallengeStars = (
   perfectBlocks: number
 ): number => {
   let stars = 0;
-  
+
   // Base star for completion
   if (blocksStacked >= level.targetBlocks) {
     stars = 1;
   }
-  
+
   // Second star for good performance
   if (perfectBlocks >= Math.floor(level.targetBlocks * 0.5)) {
     stars = 2;
   }
-  
+
   // Third star for excellent performance
   if (perfectBlocks >= Math.floor(level.targetBlocks * 0.8)) {
     stars = 3;
   }
-  
+
   return stars;
 };
