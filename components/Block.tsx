@@ -7,7 +7,6 @@ import Animated, {
   withTiming,
   useSharedValue,
   runOnJS,
-  Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Block as BlockType } from '../types/game';
@@ -22,7 +21,7 @@ interface BlockProps {
 // Memoized style calculations for better performance
 const getOptimizedBorderColor = (blockType: BlockType['type'], themeId: string) => {
   if (blockType === 'slippery') {
-    return 'rgba(255, 255, 255, 0.6)'; // Slightly reduced opacity for subtler effect
+    return 'rgba(255, 255, 255, 0.7)';
   } else if (blockType === 'heavy') {
     return themeId === 'golden' || themeId === 'diamond' 
       ? 'rgba(255, 215, 0, 0.9)' 
@@ -77,19 +76,13 @@ const BlockComponent: React.FC<BlockProps> = ({
   const blockWidth = useSharedValue(block.width);
   const blockScale = useSharedValue(1);
 
-  // IMPROVED animation parameters to reduce slippery effect
+  // Optimized animation parameters
   const ANIMATION_CONFIG = useMemo(() => ({
-    // Reduced duration for faster, less slippery transitions
-    duration: block.isMoving ? 0 : 120, // Reduced from 150ms for snappier placement
-    // More controlled spring with higher damping to reduce bouncy/slippery feel
-    spring: { 
-      damping: 22, // Increased from 18 for less bouncy effect
-      stiffness: 500, // Increased from 450 for faster settling
-      mass: 0.7 // Reduced from 0.8 for lighter, less slippery feel
-    },
+    duration: block.isMoving ? 0 : 150, // Reduced duration for snappier feel
+    spring: { damping: 18, stiffness: 450, mass: 0.8 }, // Optimized spring values
   }), [block.isMoving]);
 
-  // Ultra-fast position updates with improved transition handling
+  // Ultra-fast position updates with reduced animation overhead
   React.useEffect(() => {
     if (block.isMoving) {
       // Immediate updates for moving blocks for ultra-smooth movement
@@ -97,40 +90,26 @@ const BlockComponent: React.FC<BlockProps> = ({
       translateY.value = block.y;
       blockWidth.value = block.width;
     } else {
-      // IMPROVED: Use easing for smoother, less slippery transitions
-      const easingConfig = {
-        duration: ANIMATION_CONFIG.duration,
-        easing: Easing.out(Easing.quad), // Gentler easing for less jarring effect
-      };
-      
-      translateX.value = withTiming(block.x, easingConfig);
-      translateY.value = withTiming(block.y, easingConfig);
-      blockWidth.value = withTiming(block.width, easingConfig);
+      // Smooth transitions for placed blocks
+      translateX.value = withTiming(block.x, { duration: ANIMATION_CONFIG.duration });
+      translateY.value = withTiming(block.y, { duration: ANIMATION_CONFIG.duration });
+      blockWidth.value = withTiming(block.width, { duration: ANIMATION_CONFIG.duration });
     }
   }, [block.x, block.y, block.width, block.isMoving, ANIMATION_CONFIG.duration]);
 
-  // REDUCED drop animation effect to minimize slippery appearance
+  // Optimized drop animation with reduced duration
   React.useEffect(() => {
     if (isDropping) {
-      // Much subtler scale effect to reduce slippery/bouncy feeling
-      blockScale.value = withSpring(1.015, { // Reduced from 1.03 for subtler effect
-        damping: 25, // Higher damping for quicker settling
-        stiffness: 600, // Higher stiffness for faster response
-        mass: 0.6, // Lower mass for lighter feel
-      }); 
+      blockScale.value = withSpring(1.03, ANIMATION_CONFIG.spring); // Reduced scale for subtler effect
       
-      // Shorter duration for quicker return to normal
+      // Use setTimeout for better performance than multiple spring animations
       const timer = setTimeout(() => {
-        blockScale.value = withSpring(1, {
-          damping: 25,
-          stiffness: 600,
-          mass: 0.6,
-        });
-      }, 80); // Reduced from 120ms for faster effect
+        blockScale.value = withSpring(1, ANIMATION_CONFIG.spring);
+      }, 120); // Reduced timeout for snappier feel
       
       return () => clearTimeout(timer);
     }
-  }, [isDropping]);
+  }, [isDropping, ANIMATION_CONFIG.spring]);
 
   // Ultra-optimized animated style with minimal calculations
   const animatedStyle = useAnimatedStyle(() => {
@@ -142,8 +121,7 @@ const BlockComponent: React.FC<BlockProps> = ({
       ],
       width: blockWidth.value,
       height: block.height,
-      // IMPROVED: Slightly higher opacity for slippery blocks to reduce the slippery visual effect
-      opacity: block.type === 'slippery' ? 0.92 : 1, // Increased from 0.88 for better visibility
+      opacity: block.type === 'slippery' ? 0.88 : 1, // Slightly increased for better visibility
     };
   }, [block.type, block.height]);
 
@@ -160,24 +138,11 @@ const BlockComponent: React.FC<BlockProps> = ({
     borderColor,
   }), [borderWidth, borderColor]);
 
-  // Pre-calculated dynamic shadow styles with reduced intensity for slippery blocks
-  const dynamicShadowStyle = useMemo(() => {
-    const baseStyle = {
-      shadowColor,
-      ...shadowConfig,
-    };
-    
-    // Reduce shadow intensity for slippery blocks to minimize visual slippery effect
-    if (block.type === 'slippery') {
-      return {
-        ...baseStyle,
-        shadowOpacity: baseStyle.shadowOpacity * 0.8, // Reduced shadow for subtler effect
-        shadowRadius: baseStyle.shadowRadius * 0.9,
-      };
-    }
-    
-    return baseStyle;
-  }, [shadowColor, shadowConfig, block.type]);
+  // Pre-calculated dynamic shadow styles
+  const dynamicShadowStyle = useMemo(() => ({
+    shadowColor,
+    ...shadowConfig,
+  }), [shadowColor, shadowConfig]);
 
   // Determine if special overlay is needed
   const needsSpecialOverlay = useMemo(() => 
@@ -196,22 +161,8 @@ const BlockComponent: React.FC<BlockProps> = ({
       {/* Conditionally render special effect overlay only when needed */}
       {needsSpecialOverlay && (
         <LinearGradient
-          colors={['rgba(255, 255, 255, 0.2)', 'transparent', 'rgba(255, 255, 255, 0.1)']}
+          colors={['rgba(255, 255, 255, 0.25)', 'transparent', 'rgba(255, 255, 255, 0.15)']}
           style={styles.shineOverlay}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-      )}
-      
-      {/* REDUCED: Less prominent slippery effect overlay */}
-      {block.type === 'slippery' && (
-        <LinearGradient
-          colors={[
-            'rgba(255, 255, 255, 0.15)', // Reduced from 0.25 for subtler effect
-            'rgba(255, 255, 255, 0.05)', // Reduced from 0.1
-            'rgba(255, 255, 255, 0.08)', // Reduced from 0.15
-          ]}
-          style={styles.slipperyOverlay}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
@@ -223,12 +174,11 @@ const BlockComponent: React.FC<BlockProps> = ({
 // Enhanced memoization with more specific prop comparison for better performance
 export const Block = memo(BlockComponent, (prevProps, nextProps) => {
   // Only re-render if essential properties change
-  // Slightly tighter tolerance for position changes to reduce unnecessary re-renders
   return (
     prevProps.block.id === nextProps.block.id &&
-    Math.abs(prevProps.block.x - nextProps.block.x) < 0.3 && // Tighter tolerance for smoother animation
-    Math.abs(prevProps.block.y - nextProps.block.y) < 0.3 &&
-    Math.abs(prevProps.block.width - nextProps.block.width) < 0.3 &&
+    Math.abs(prevProps.block.x - nextProps.block.x) < 0.5 && // Tolerance for micro-movements
+    Math.abs(prevProps.block.y - nextProps.block.y) < 0.5 &&
+    Math.abs(prevProps.block.width - nextProps.block.width) < 0.5 &&
     prevProps.block.isMoving === nextProps.block.isMoving &&
     prevProps.block.type === nextProps.block.type &&
     prevProps.isDropping === nextProps.isDropping &&
@@ -236,16 +186,16 @@ export const Block = memo(BlockComponent, (prevProps, nextProps) => {
   );
 });
 
-// Optimized styles with reduced complexity and improved slippery effect handling
+// Optimized styles with reduced complexity
 const styles = StyleSheet.create({
   block: {
     position: 'absolute',
-    borderRadius: 6,
+    borderRadius: 6, // Slightly reduced for better performance on some devices
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 3, // Reduced for better performance
     },
-    elevation: 6,
+    elevation: 6, // Reduced for better performance on Android
   },
   gradient: {
     flex: 1,
@@ -254,11 +204,6 @@ const styles = StyleSheet.create({
   shineOverlay: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 6,
-    opacity: 0.4, // Slightly reduced for subtler effect
-  },
-  slipperyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 6,
-    opacity: 0.6, // Controlled opacity for subtle slippery indication without being overpowering
+    opacity: 0.5, // Slightly reduced for subtler effect
   },
 });

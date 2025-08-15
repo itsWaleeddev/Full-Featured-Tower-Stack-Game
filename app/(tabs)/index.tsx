@@ -32,8 +32,8 @@ import { saveGameData, loadGameData, saveScore } from '../../utils/storage';
 // Optimized animation constants for higher speeds
 const ANIMATION_FRAME_RATE = 60;
 const TARGET_FRAME_TIME = 1000 / ANIMATION_FRAME_RATE; // ~16.67ms for 60fps
-const MAX_DELTA_TIME = TARGET_FRAME_TIME * 1.8; // Slightly reduced to prevent large jumps
-const POSITION_UPDATE_THRESHOLD = 0.3; // Reduced threshold for smoother movement with lower speeds
+const MAX_DELTA_TIME = TARGET_FRAME_TIME * 2; // Prevent large jumps
+const POSITION_UPDATE_THRESHOLD = 0.5; // Lower threshold for smoother movement
 
 // Game flow states
 type GameFlow = 'mode_select' | 'playing' | 'paused' | 'game_over';
@@ -225,103 +225,99 @@ export default function StackTowerGame() {
   // Optimized animation loop with frame rate control
   // Animate moving block
   // Optimized animation loop with interpolation for higher speeds
- useEffect(() => {
-  if (!gameState.currentBlock || !gameState.currentBlock.isMoving) return;
+  useEffect(() => {
+    if (!gameState.currentBlock || !gameState.currentBlock.isMoving) return;
 
-  isAnimatingRef.current = true;
-  lastFrameTimeRef.current = performance.now();
-  accumulatedTimeRef.current = 0;
+    isAnimatingRef.current = true;
+    lastFrameTimeRef.current = performance.now();
+    accumulatedTimeRef.current = 0;
 
-  const animateBlock = (currentTime: number) => {
-    if (!isAnimatingRef.current || !gameState.currentBlock) return;
+    const animateBlock = (currentTime: number) => {
+      if (!isAnimatingRef.current || !gameState.currentBlock) return;
 
-    const deltaTime = Math.min(currentTime - lastFrameTimeRef.current, MAX_DELTA_TIME);
-    lastFrameTimeRef.current = currentTime;
-    accumulatedTimeRef.current += deltaTime;
+      const deltaTime = Math.min(currentTime - lastFrameTimeRef.current, MAX_DELTA_TIME);
+      lastFrameTimeRef.current = currentTime;
+      accumulatedTimeRef.current += deltaTime;
 
-    // IMPROVED: More consistent timestep for smoother movement at reduced speeds
-    while (accumulatedTimeRef.current >= TARGET_FRAME_TIME) {
-      const block = gameState.currentBlock;
-      if (!block) break;
+      // Fixed timestep for consistent movement at high speeds
+      while (accumulatedTimeRef.current >= TARGET_FRAME_TIME) {
+        const block = gameState.currentBlock;
+        if (!block) break;
 
-      let newX = block.x;
-      let newDirection = block.direction;
+        let newX = block.x;
+        let newDirection = block.direction;
 
-      // ENHANCED: Better movement calculation with improved sub-pixel precision
-      const moveDistance = block.speed * (TARGET_FRAME_TIME / 16.67); // Normalize to 60fps baseline
-      
-      // IMPROVED: Smoother direction changes with better boundary handling
-      if (block.direction === 'right') {
-        newX += moveDistance;
-        if (newX + block.width >= GAME_CONFIG.SCREEN_WIDTH) {
-          newDirection = 'left';
-          // More precise boundary positioning to reduce slippery effect
-          newX = GAME_CONFIG.SCREEN_WIDTH - block.width - 0.1;
+        // Calculate movement with sub-pixel precision for smoothness
+        const moveDistance = block.speed * (TARGET_FRAME_TIME / 16.67); // Normalize to 60fps baseline
+
+        if (block.direction === 'right') {
+          newX += moveDistance;
+          if (newX + block.width >= GAME_CONFIG.SCREEN_WIDTH) {
+            newDirection = 'left';
+            newX = GAME_CONFIG.SCREEN_WIDTH - block.width;
+          }
+        } else {
+          newX -= moveDistance;
+          if (newX <= 0) {
+            newDirection = 'right';
+            newX = 0;
+          }
         }
-      } else {
-        newX -= moveDistance;
-        if (newX <= 0) {
-          newDirection = 'right';
-          // More precise boundary positioning
-          newX = 0.1;
+
+        // Update position with lower threshold for smoother movement
+        if (Math.abs(newX - block.x) > POSITION_UPDATE_THRESHOLD || newDirection !== block.direction) {
+          updateCurrentBlockPosition(newX, newDirection);
         }
+
+        accumulatedTimeRef.current -= TARGET_FRAME_TIME;
       }
 
-      // OPTIMIZED: Update position with better threshold for smoother movement
-      const positionDelta = Math.abs(newX - block.x);
-      if (positionDelta > POSITION_UPDATE_THRESHOLD || newDirection !== block.direction) {
-        updateCurrentBlockPosition(newX, newDirection);
+      if (gameState.gameStarted && !gameState.gameOver && !isPaused && isAnimatingRef.current) {
+        animationRef.current = requestAnimationFrame(animateBlock);
       }
+    };
 
-      accumulatedTimeRef.current -= TARGET_FRAME_TIME;
-    }
+    animationRef.current = requestAnimationFrame(animateBlock);
 
-    if (gameState.gameStarted && !gameState.gameOver && !isPaused && isAnimatingRef.current) {
-      animationRef.current = requestAnimationFrame(animateBlock);
-    }
-  };
-
-  animationRef.current = requestAnimationFrame(animateBlock);
-
-  return () => {
-    isAnimatingRef.current = false;
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-  };
-}, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, isPaused, updateCurrentBlockPosition]);
+    return () => {
+      isAnimatingRef.current = false;
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, isPaused, updateCurrentBlockPosition]);
 
 
   // Optimized camera animation with reduced frequency
   // Camera animation based on tower height
   // Optimized camera animation with faster response for high-speed gameplay
   useEffect(() => {
-  const blockHeight = 40;
-  const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
-  const halfScreenHeight = screenHeight / 2;
-  const currentTowerHeightPixels = gameState.tower_height * blockHeight;
+    const blockHeight = 40;
+    const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
+    const halfScreenHeight = screenHeight / 2;
+    const currentTowerHeightPixels = gameState.tower_height * blockHeight;
 
-  let targetY = 0;
-  let targetScale = 1;
+    let targetY = 0;
+    let targetScale = 1;
 
-  if (currentTowerHeightPixels > halfScreenHeight) {
-    const excessHeight = currentTowerHeightPixels - halfScreenHeight;
-    // BALANCED camera movement - responsive but not too fast
-    const movementFactor = 0.65; // Slightly reduced from 0.7 for better balance with reduced block speeds
-    targetY = excessHeight * movementFactor;
-    targetScale = Math.max(0.87, 1 - (excessHeight / screenHeight) * 0.13); // Slight adjustment for better visibility
-  }
+    if (currentTowerHeightPixels > halfScreenHeight) {
+      const excessHeight = currentTowerHeightPixels - halfScreenHeight;
+      // Faster camera movement for high-speed gameplay
+      const fastMovementFactor = 0.7; // Increased from 0.5
+      targetY = excessHeight * fastMovementFactor;
+      targetScale = Math.max(0.85, 1 - (excessHeight / screenHeight) * 0.15); // More zoom for better visibility
+    }
 
-  // IMPROVED camera transitions with better easing for smoother feel
-  cameraY.value = withTiming(targetY, {
-    duration: 450, // Slightly increased from 400ms for smoother camera movement
-    easing: Easing.out(Easing.cubic) // Smooth easing that matches reduced block speeds
-  });
-  cameraScale.value = withTiming(targetScale, {
-    duration: 450,
-    easing: Easing.out(Easing.cubic)
-  });
-}, [gameState.tower_height]);
+    // Faster camera transitions for responsive feel
+    cameraY.value = withTiming(targetY, {
+      duration: 400, // Reduced from 600ms
+      easing: Easing.out(Easing.cubic) // Smoother easing
+    });
+    cameraScale.value = withTiming(targetScale, {
+      duration: 400, // Reduced from 600ms
+      easing: Easing.out(Easing.cubic)
+    });
+  }, [gameState.tower_height]);
 
   // Update high score and handle challenge completion
   useEffect(() => {
