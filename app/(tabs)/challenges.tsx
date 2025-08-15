@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { ChallengeLevel } from '@/types/game';
 import { CHALLENGE_LEVELS, THEME_UI_COLORS } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
+import { useSoundManager } from '@/hooks/useSoundManager';
 import { Background } from '@/components/Background';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -26,6 +27,7 @@ const getDifficultyLabel = (level: number) => {
 
 export default function ChallengesScreen() {
   const router = useRouter();
+  const { playSound } = useSoundManager();
   const { themeState, getCurrentUnlockedLevel } = useTheme();
   const [selectedLevel, setSelectedLevel] = useState<ChallengeLevel | null>(null);
 
@@ -33,10 +35,15 @@ export default function ChallengesScreen() {
   const currentUnlockedLevel = getCurrentUnlockedLevel();
 
   const handleLevelSelect = (level: ChallengeLevel) => {
+    // Play button sound for level selection
+    playSound('button', 0.6);
     setSelectedLevel(level);
   };
 
   const handleStartChallenge = (level: ChallengeLevel) => {
+    // Play success sound when starting a challenge
+    playSound('success', 0.8);
+    
     // Navigate to game with challenge mode and auto-start
     router.push({
       pathname: '/',
@@ -46,6 +53,11 @@ export default function ChallengesScreen() {
         autoStart: 'true'
       }
     });
+  };
+
+  const handleLockedLevel = () => {
+    // Play failed sound when trying to access locked level
+    playSound('failed', 0.5);
   };
 
   const renderStars = (stars: number) => {
@@ -79,7 +91,7 @@ export default function ChallengesScreen() {
           selectedLevel?.id === level.id && styles.selectedLevelCard,
           isLocked && styles.lockedLevelCard,
         ]}
-        onPress={() => !isLocked && handleLevelSelect(level)}
+        onPress={() => !isLocked ? handleLevelSelect(level) : handleLockedLevel()}
         disabled={isLocked}
       >
         <LinearGradient
@@ -193,19 +205,25 @@ export default function ChallengesScreen() {
           </View>
           
           <View style={styles.headerStats}>
-            <View style={[styles.statBadge, { backgroundColor: themeColors.cardBackground }]}>
+            <TouchableOpacity 
+              style={[styles.statBadge, { backgroundColor: themeColors.cardBackground }]}
+              onPress={() => playSound('click', 0.5)}
+            >
               <Award size={16} color={themeColors.accent} />
               <Text style={[styles.statBadgeText, { color: themeColors.textPrimary }]}>
                 {completedLevels}/{CHALLENGE_LEVELS.length}
               </Text>
-            </View>
+            </TouchableOpacity>
             
-            <View style={[styles.statBadge, { backgroundColor: themeColors.cardBackground }]}>
+            <TouchableOpacity 
+              style={[styles.statBadge, { backgroundColor: themeColors.cardBackground }]}
+              onPress={() => playSound('click', 0.5)}
+            >
               <Star size={16} color="#FFD700" />
               <Text style={[styles.statBadgeText, { color: themeColors.textPrimary }]}>
                 {totalStars}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

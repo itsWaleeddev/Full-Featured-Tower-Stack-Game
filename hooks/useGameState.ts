@@ -4,8 +4,11 @@ import { GameState, Block, GameMode, ChallengeLevel } from '../types/game';
 import { createInitialBlock, createNewBlock, calculateCollision, calculateScore } from '../utils/gameLogic';
 import { GAME_CONFIG, CHALLENGE_LEVELS } from '../constants/game';
 import { saveGameData } from '../utils/storage';
+import { useSoundManager } from './useSoundManager';
 
 export const useGameState = () => {
+  const { playSound } = useSoundManager();
+  
   const [gameState, setGameState] = useState<GameState>({
     blocks: [createInitialBlock()],
     score: 0,
@@ -64,7 +67,17 @@ export const useGameState = () => {
       const topBlock = prev.blocks[prev.blocks.length - 1];
       const collision = calculateCollision(prev.currentBlock, topBlock);
 
+      // Play click sound when block is dropped
+      runOnJS(() => {
+        playSound('click', 0.6);
+      })();
+
       if (collision.newWidth <= 0) {
+        // Game over - play failed sound
+        runOnJS(() => {
+          playSound('failed', 0.8);
+        })();
+
         return {
           ...prev,
           gameOver: true,
@@ -84,10 +97,26 @@ export const useGameState = () => {
       const newPerfectBlocks = collision.isPerfect ? prev.perfectBlocks + 1 : prev.perfectBlocks;
       const scoreIncrease = calculateScore(prev.tower_height, newCombo, collision.isPerfect, prev.mode);
 
+      // Play sound based on collision quality
+      runOnJS(() => {
+        if (collision.isPerfect) {
+          playSound('chime', 0.7); // Perfect placement sound
+        } else if (collision.collisionAccuracy > 0.7) {
+          playSound('drop', 0.5); // Good placement sound
+        } else {
+          playSound('drop', 0.3); // Regular placement sound
+        }
+      })();
+
       // Check if challenge/time attack mode objectives are met
       const isComplete = checkModeCompletion(prev, newBlock);
 
       if (isComplete) {
+        // Challenge/time attack completed - play success sound
+        runOnJS(() => {
+          playSound('success', 0.8);
+        })();
+
         return {
           ...prev,
           blocks: [...prev.blocks, newBlock],
@@ -118,7 +147,7 @@ export const useGameState = () => {
         tower_height: prev.tower_height + 1,
       };
     });
-  }, []);
+  }, [playSound]);
 
   const checkModeCompletion = (state: GameState, newBlock: Block): boolean => {
     if (state.mode === 'challenge' && state.level) {
@@ -138,6 +167,11 @@ export const useGameState = () => {
       const newTime = (prev.timeRemaining || 0) - 1;
 
       if (newTime <= 0) {
+        // Time attack failed - play failed sound
+        runOnJS(() => {
+          playSound('failed', 0.8);
+        })();
+
         return {
           ...prev,
           timeRemaining: 0,
@@ -147,12 +181,19 @@ export const useGameState = () => {
         };
       }
 
+      // Play warning sound when time is low
+      if (newTime === 10 || newTime === 5 || newTime === 3) {
+        runOnJS(() => {
+          playSound('click', 0.8);
+        })();
+      }
+
       return {
         ...prev,
         timeRemaining: newTime,
       };
     });
-  }, []);
+  }, [playSound]);
 
   // Batch state updates for better performance
   const resetGame = useCallback(() => {

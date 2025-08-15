@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag } from 'lucide-react-native';
 import { Theme } from '@/types/game';
 import { THEMES } from '@/constants/game';
-import { useTheme } from '@/contexts/GameContext'; // Import the theme context
+import { useTheme } from '@/contexts/GameContext';
+import { useSoundManager } from '@/hooks/useSoundManager';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ const getRarityIcon = (rarity: string) => {
 
 export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const { playSound } = useSoundManager();
   
   // Use global theme context instead of local state
   const { 
@@ -39,6 +41,9 @@ export default function Shop() {
   } = useTheme();
 
   const handleThemeSelect = (themeId: string) => {
+    // Play button sound for theme selection
+    playSound('button', 0.7);
+    
     // Only allow selection if theme is unlocked
     if (themeState.unlockedThemes.includes(themeId)) {
       setCurrentTheme(themeId);
@@ -48,10 +53,22 @@ export default function Shop() {
   const handleThemePurchase = (themeId: string) => {
     const theme = THEMES.find(t => t.id === themeId);
     if (theme && themeState.coins >= theme.cost) {
+      // Play purchase sound
+      playSound('purchase', 0.8);
+      
       spendCoins(theme.cost);
       unlockTheme(themeId);
       setCurrentTheme(themeId);
+    } else {
+      // Play failed sound if not enough coins
+      playSound('failed', 0.5);
     }
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    // Play button sound for category selection
+    playSound('button', 0.6);
+    setSelectedCategory(categoryId);
   };
 
   const categories = [
@@ -104,7 +121,7 @@ export default function Shop() {
               styles.categoryButton,
               selectedCategory === category.id && styles.selectedCategoryButton,
             ]}
-            onPress={() => setSelectedCategory(category.id)}
+            onPress={() => handleCategorySelect(category.id)}
           >
             {category.icon}
             <Text style={[
@@ -132,6 +149,9 @@ export default function Shop() {
                   handleThemeSelect(theme.id);
                 } else if (themeState.coins >= theme.cost) {
                   handleThemePurchase(theme.id);
+                } else {
+                  // Play failed sound if can't afford
+                  playSound('failed', 0.5);
                 }
               }}
               disabled={!theme.unlocked && themeState.coins < theme.cost}
@@ -201,10 +221,13 @@ export default function Shop() {
                           <Text style={styles.buyButtonText}>{theme.cost}</Text>
                         </TouchableOpacity>
                       ) : (
-                        <View style={styles.cantAffordContainer}>
+                        <TouchableOpacity 
+                          style={styles.cantAffordContainer}
+                          onPress={() => playSound('failed', 0.4)}
+                        >
                           <Coins size={14} color="#666" />
                           <Text style={styles.cantAffordText}>{theme.cost}</Text>
-                        </View>
+                        </TouchableOpacity>
                       )}
                     </View>
                   )}

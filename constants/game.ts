@@ -13,7 +13,7 @@ export const GAME_CONFIG = {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
   BLOCK_HEIGHT: 40,
-  INITIAL_BLOCK_WIDTH: 120,
+  INITIAL_BLOCK_WIDTH: 150, //120
   
   // Optimized speeds for smooth high-speed gameplay
   INITIAL_SPEED: 2.2 * PERFORMANCE_MULTIPLIER, // Slightly reduced from 2.5x for smoother start
@@ -25,7 +25,7 @@ export const GAME_CONFIG = {
   COMBO_MULTIPLIER: 12, // Increased to reward precision at speed
   BASE_SCORE: 120, // Increased base score
   
-  TIME_ATTACK_DURATION: 60, // seconds
+  TIME_ATTACK_DURATION: 20, // seconds
   DAILY_CHALLENGE_REWARD: 50,
   
   // Enhanced performance settings for smooth high-speed animation

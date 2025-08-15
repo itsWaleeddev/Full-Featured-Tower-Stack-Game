@@ -23,6 +23,7 @@ import { ThemeSelector } from '../../components/ThemeSelector';
 import { useGameState } from '../../hooks/useGameState';
 import { useHighScore } from '../../hooks/useHighScore';
 import { useTheme } from '../../contexts/GameContext';
+import { useSoundManager } from '../../hooks/useSoundManager';
 import { GAME_CONFIG, ANIMATION_CONFIG, CHALLENGE_LEVELS, THEMES } from '../../constants/game';
 import { GameMode, ChallengeLevel, DailyChallenge } from '../../types/game';
 import { generateDailyChallenge, calculateChallengeStars } from '../../utils/gameLogic';
@@ -62,6 +63,9 @@ export default function StackTowerGame() {
     getCurrentUnlockedLevel
   } = useTheme();
 
+  // Sound management
+  const { playSound, stopAllSounds, soundEnabled, toggleSound } = useSoundManager();
+
   // Refs and animated values
   const animationRef = useRef<number | undefined>(undefined);
   const timerRef = useRef<number | null>(null);
@@ -79,11 +83,13 @@ export default function StackTowerGame() {
   const [challengeStarsEarned, setChallengeStarsEarned] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [previousHighScore, setPreviousHighScore] = useState(0);
 
   // Performance optimization: Use refs for animation control
   const isAnimatingRef = useRef(false);
   const lastFrameTimeRef = useRef(0);
   const accumulatedTimeRef = useRef(0); // For consistent frame timing
+
   // Handle navigation from challenges screen
   useEffect(() => {
     if (params.mode === 'challenge' && params.levelId && params.autoStart === 'true') {
@@ -103,11 +109,14 @@ export default function StackTowerGame() {
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // Pause animations and save state when app goes to background
+        // Pause animations, save state, and stop sounds when app goes to background
         if (animationRef.current) {
           cancelAnimationFrame(animationRef.current);
         }
         setIsPaused(true);
+
+        // Stop all sounds when app goes to background
+        stopAllSounds();
 
         // Save current game state
         runOnJS(() => {
@@ -126,7 +135,7 @@ export default function StackTowerGame() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [gameState, themeState]);
+  }, [gameState, themeState, stopAllSounds]);
 
   // Load saved game data on mount
   useEffect(() => {
@@ -211,7 +220,7 @@ export default function StackTowerGame() {
       setIsPaused(false); // Reset pause state when returning to menu
     }
   }, [gameState.gameStarted, gameState.gameOver, isPaused]);
-
+  
   // Timer for time attack mode
   useEffect(() => {
     if (gameState.mode === 'timeAttack' && gameState.gameStarted && !gameState.gameOver && !isPaused) {
@@ -319,9 +328,13 @@ export default function StackTowerGame() {
     });
   }, [gameState.tower_height]);
 
-  // Update high score and handle challenge completion
+  // Enhanced game over handling with sound effects
   useEffect(() => {
     if (gameState.gameOver && gameState.score > 0 && !gameState.rewardsGranted) {
+      // Store previous high score before updating
+      setPreviousHighScore(highScore);
+      const isNewHighScore = gameState.score > highScore;
+
       updateHighScore(gameState.score);
 
       // Save score record
@@ -335,20 +348,21 @@ export default function StackTowerGame() {
 
       let totalCoinsEarned = 0;
       let starsEarned = 0;
+      let challengeCompleted = false;
 
-      // Handle challenge mode completion
+      // Handle challenge mode completion with sounds
       if (gameState.mode === 'challenge' && selectedLevel) {
         const blocksStacked = gameState.tower_height - 1;
         const perfectBlocks = gameState.combo; // This should be tracked properly
-        const completed = blocksStacked >= selectedLevel.targetBlocks;
+        challengeCompleted = blocksStacked >= selectedLevel.targetBlocks;
 
-        if (completed) {
+        if (challengeCompleted) {
           starsEarned = calculateChallengeStars(
             selectedLevel,
             gameState.score,
             blocksStacked,
             perfectBlocks,
-            completed
+            challengeCompleted
           );
 
           const previousStars = themeState.challengeProgress[selectedLevel.id]?.stars || 0;
@@ -363,6 +377,12 @@ export default function StackTowerGame() {
 
           totalCoinsEarned += challengeCoins;
           setChallengeStarsEarned(starsEarned);
+
+          // Play success sound for challenge completion
+          playSound('success', 0.9);
+        } else {
+          // Play failed sound for challenge failure
+          playSound('failed', 0.8);
         }
       } else {
         // Award coins for other modes
@@ -370,6 +390,13 @@ export default function StackTowerGame() {
         if (coinsEarned > 0) {
           addCoins(coinsEarned);
           totalCoinsEarned += coinsEarned;
+        }
+
+        // Play appropriate sound based on high score
+        if (isNewHighScore) {
+          playSound('success', 0.9); // New high score
+        } else {
+          playSound('failed', 0.6); // Regular game over
         }
       }
 
@@ -379,13 +406,14 @@ export default function StackTowerGame() {
         if (challengeMet) {
           addCoins(dailyChallenge.reward);
           totalCoinsEarned += dailyChallenge.reward;
+          playSound('chime', 0.8); // Daily challenge completed
         }
       }
 
       setCoinsEarnedThisGame(totalCoinsEarned);
       setGameState(prev => ({ ...prev, rewardsGranted: true }));
     }
-  }, [gameState.gameOver, gameState.score, updateHighScore, addCoins, completeChallengeLevel]);
+  }, [gameState.gameOver, gameState.score, updateHighScore, addCoins, completeChallengeLevel, playSound, highScore]);
 
   const checkDailyChallengeCompletion = (): boolean => {
     if (!dailyChallenge) return false;
@@ -399,7 +427,6 @@ export default function StackTowerGame() {
     }
     return false;
   };
-
   // Memoized camera style to prevent unnecessary recalculations
   const cameraStyle = useAnimatedStyle(() => {
     return {
@@ -410,8 +437,9 @@ export default function StackTowerGame() {
     };
   }, []);
 
-  // Game flow handlers
+  // Game flow handlers with sound integration
   const handleModeSelect = (mode: GameMode) => {
+    playSound('button', 0.7); // Play button sound on mode selection
     setSelectedMode(mode);
 
     if (mode === 'challenge') {
@@ -426,6 +454,8 @@ export default function StackTowerGame() {
   };
 
   const handlePlayAgain = () => {
+    playSound('button', 0.7); // Play button sound
+
     // Reset camera
     cancelAnimation(cameraY);
     cancelAnimation(cameraScale);
@@ -445,6 +475,8 @@ export default function StackTowerGame() {
   };
 
   const handlePlayNextLevel = () => {
+    playSound('button', 0.7); // Play button sound
+
     if (selectedMode === 'challenge' && selectedLevel) {
       const nextLevel = CHALLENGE_LEVELS.find(l => l.id === selectedLevel.id + 1);
       if (nextLevel) {
@@ -466,6 +498,8 @@ export default function StackTowerGame() {
   };
 
   const handleBackToModeSelect = () => {
+    playSound('button', 0.7); // Play button sound
+
     // Reset everything
     resetGame();
     cancelAnimation(cameraY);
@@ -483,16 +517,20 @@ export default function StackTowerGame() {
     }
   };
 
-  // Pause/Resume handlers
+  // Pause/Resume handlers with sound
   const handlePause = () => {
+    playSound('button', 0.7); // Play button sound
     setIsPaused(true);
   };
 
   const handleResume = () => {
+    playSound('button', 0.7); // Play button sound
     setIsPaused(false);
   };
 
   const handlePauseRestart = () => {
+    playSound('button', 0.7); // Play button sound
+
     // Reset camera
     cancelAnimation(cameraY);
     cancelAnimation(cameraScale);
@@ -515,6 +553,8 @@ export default function StackTowerGame() {
   };
 
   const handlePauseHome = () => {
+    playSound('button', 0.7); // Play button sound
+
     // Reset everything
     resetGame();
     cancelAnimation(cameraY);
@@ -530,18 +570,36 @@ export default function StackTowerGame() {
   const handleThemePurchase = (themeId: string) => {
     const theme = THEMES.find(t => t.id === themeId);
     if (theme && themeState.coins >= theme.cost) {
+      playSound('purchase', 0.8); // Play purchase sound
       spendCoins(theme.cost);
       unlockTheme(themeId);
       setCurrentTheme(themeId);
     }
   };
 
+  const handleThemeSelect = (themeId: string) => {
+    playSound('click', 0.6); // Play click sound for theme selection
+    setCurrentTheme(themeId);
+  };
+
   const handleDailyChallengeAccept = () => {
+    playSound('button', 0.7); // Play button sound
     if (dailyChallenge) {
       setSelectedMode('classic');
       startGame('classic');
       setShowDailyChallenge(false);
     }
+  };
+
+  const handleThemePress = () => {
+    playSound('button', 0.7); // Play button sound
+    setShowThemeSelector(true);
+  };
+
+  const handleCloseModals = () => {
+    playSound('click', 0.5); // Play subtle click sound
+    setShowThemeSelector(false);
+    setShowDailyChallenge(false);
   };
 
   const getCurrentChallengeLevel = (): ChallengeLevel | undefined => {
@@ -645,7 +703,7 @@ export default function StackTowerGame() {
             onModeSelect={handleModeSelect}
             onClose={() => { }}
             coins={themeState.coins}
-            onThemePress={() => setShowThemeSelector(true)}
+            onThemePress={handleThemePress}
             showAsMainMenu={true}
             setSelectedMode={setSelectedMode}
             currentTheme={themeState.currentTheme}
@@ -676,7 +734,10 @@ export default function StackTowerGame() {
             onPlayAgain={handlePlayAgain}
             onPlayNextLevel={handlePlayNextLevel}
             onModeSelect={handleBackToModeSelect}
-            onShare={() => {/* Implement sharing */ }}
+            onShare={() => {
+              playSound('button', 0.7);
+              /* Implement sharing */
+            }}
           />
         )}
 
@@ -685,16 +746,16 @@ export default function StackTowerGame() {
           themes={unlockedThemesList}
           currentTheme={themeState.currentTheme}
           coins={themeState.coins}
-          onThemeSelect={setCurrentTheme}
+          onThemeSelect={handleThemeSelect}
           onThemePurchase={handleThemePurchase}
-          onClose={() => setShowThemeSelector(false)}
+          onClose={handleCloseModals}
         />
 
         <DailyChallengeModal
           visible={showDailyChallenge}
           challenge={dailyChallenge}
           onAccept={handleDailyChallengeAccept}
-          onClose={() => setShowDailyChallenge(false)}
+          onClose={handleCloseModals}
         />
       </View>
     </TouchableWithoutFeedback>
