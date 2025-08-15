@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -72,8 +73,8 @@ const AnimatedBlock = ({
       delay + 200,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 2000 }),
-          withTiming(0.3, { duration: 2000 })
+          withTiming(1, { duration: 1500 }),
+          withTiming(0.3, { duration: 1500 })
         ),
         -1,
         true
@@ -145,9 +146,12 @@ const AnimatedBlock = ({
   );
 };
 
+// Memoized AnimatedBlock to prevent unnecessary re-renders
+const MemoizedAnimatedBlock = memo(AnimatedBlock);
+
 // Enhanced Floating Particles Component
-const FloatingParticles = ({ themeId = 'default' }: { themeId?: string }) => {
-  const particles = Array.from({ length: 18 }, (_, i) => i);
+const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) => {
+  const particles = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []); // Reduced particles for performance
   
   return (
     <View style={styles.particlesContainer}>
@@ -167,29 +171,29 @@ const FloatingParticles = ({ themeId = 'default' }: { themeId?: string }) => {
               
               translateY.value = withDelay(
                 Math.random() * 4000,
-                withTiming(-100, { duration: 12000 + Math.random() * 6000 })
+                withTiming(-100, { duration: 8000 + Math.random() * 4000 }) // Reduced duration
               );
               
               translateX.value = withDelay(
                 Math.random() * 4000,
-                withTiming((Math.random() - 0.5) * 100, { duration: 12000 + Math.random() * 6000 })
+                withTiming((Math.random() - 0.5) * 100, { duration: 8000 + Math.random() * 4000 })
               );
               
               opacity.value = withDelay(
                 Math.random() * 4000,
                 withSequence(
-                  withTiming(0.9, { duration: 1500 }),
-                  withTiming(0.9, { duration: 9000 }),
-                  withTiming(0, { duration: 1500 })
+                  withTiming(0.7, { duration: 1000 }),
+                  withTiming(0.7, { duration: 6000 }),
+                  withTiming(0, { duration: 1000 })
                 )
               );
 
               scale.value = withDelay(
                 Math.random() * 4000,
-                withTiming(1 + Math.random() * 0.5, { duration: 2000 })
+                withTiming(1 + Math.random() * 0.3, { duration: 1500 })
               );
               
-              setTimeout(startAnimation, 12000 + Math.random() * 6000);
+              setTimeout(startAnimation, 8000 + Math.random() * 4000);
             };
             
             startAnimation();
@@ -235,9 +239,10 @@ const FloatingParticles = ({ themeId = 'default' }: { themeId?: string }) => {
       })}
     </View>
   );
-};
+});
 
-const getThemeStyles = (themeId: string = 'default') => {
+// Memoize theme styles calculation
+const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   const [primaryColor, secondaryColor] = theme.backgroundColors;
   
@@ -255,9 +260,9 @@ const getThemeStyles = (themeId: string = 'default') => {
                themeId === 'galaxy' ? '#9370db' : 
                themeId === 'golden' ? '#ffd700' : theme.blockColors[0][0],
   };
-};
+}, []);
 
-export const ModeSelector: React.FC<ModeSelectorProps> = ({
+const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
   selectedMode,
   visible,
   onModeSelect,
@@ -296,8 +301,10 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
   const themeStyles = getThemeStyles(currentTheme);
 
   // Get theme-appropriate block colors for the tower display
-  const currentThemeData = THEMES.find(t => t.id === currentTheme) || THEMES[0];
-  const blockColors = currentThemeData.blockColors;
+  const blockColors = useMemo(() => {
+    const currentThemeData = THEMES.find(t => t.id === currentTheme) || THEMES[0];
+    return currentThemeData.blockColors;
+  }, [currentTheme]);
 
   const titleAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: titleScale.value }],
@@ -364,7 +371,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
           <Animated.View style={[styles.titleSection, titleAnimatedStyle]}>
             {/* Animated Block Stack Display - NOW ABOVE THE TEXT */}
             <Animated.View style={[styles.blockStackContainer, stackAnimatedStyle]}>
-              <AnimatedBlock
+              <MemoizedAnimatedBlock
                 width={120} //increased by 30
                 height={31} //increased by 5
                 x={0}
@@ -373,7 +380,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                 delay={800}
                 themeId={currentTheme}
               />
-              <AnimatedBlock
+              <MemoizedAnimatedBlock
                 width={105}
                 height={31}
                 x={7.5}
@@ -382,7 +389,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                 delay={1000}
                 themeId={currentTheme}
               />
-              <AnimatedBlock
+              <MemoizedAnimatedBlock
                 width={125}
                 height={31}
                 x={-2.5}
@@ -391,7 +398,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
                 delay={1200}
                 themeId={currentTheme}
               />
-              <AnimatedBlock
+              <MemoizedAnimatedBlock
                 width={95} 
                 height={31}
                 x={12.5}
@@ -578,6 +585,17 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     </View>
   );
 };
+
+// Memoize the entire component for better performance
+export const ModeSelector = memo(ModeSelectorComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.selectedMode === nextProps.selectedMode &&
+    prevProps.visible === nextProps.visible &&
+    prevProps.coins === nextProps.coins &&
+    prevProps.currentTheme === nextProps.currentTheme &&
+    prevProps.showAsMainMenu === nextProps.showAsMainMenu
+  );
+});
 
 const styles = StyleSheet.create({
   modalOverlay: {

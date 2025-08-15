@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { View, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   withTiming,
   useSharedValue,
+  runOnJS,
+  cancelAnimation,
+  Easing
 } from 'react-native-reanimated';
 import { Background } from '../../components/Background';
 import { Block } from '../../components/Block';
@@ -23,6 +27,13 @@ import { GAME_CONFIG, ANIMATION_CONFIG, CHALLENGE_LEVELS, THEMES } from '../../c
 import { GameMode, ChallengeLevel, DailyChallenge } from '../../types/game';
 import { generateDailyChallenge, calculateChallengeStars } from '../../utils/gameLogic';
 import { saveGameData, loadGameData, saveScore } from '../../utils/storage';
+
+// Optimize animation frame rate for Android
+// Optimized animation constants for higher speeds
+const ANIMATION_FRAME_RATE = 60;
+const TARGET_FRAME_TIME = 1000 / ANIMATION_FRAME_RATE; // ~16.67ms for 60fps
+const MAX_DELTA_TIME = TARGET_FRAME_TIME * 1.8; // Slightly reduced to prevent large jumps
+const POSITION_UPDATE_THRESHOLD = 0.3; // Reduced threshold for smoother movement with lower speeds
 
 // Game flow states
 type GameFlow = 'mode_select' | 'playing' | 'paused' | 'game_over';
@@ -67,22 +78,55 @@ export default function StackTowerGame() {
   const [coinsEarnedThisGame, setCoinsEarnedThisGame] = useState(0);
   const [challengeStarsEarned, setChallengeStarsEarned] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // Performance optimization: Use refs for animation control
+  const isAnimatingRef = useRef(false);
+  const lastFrameTimeRef = useRef(0);
+  const accumulatedTimeRef = useRef(0); // For consistent frame timing
   // Handle navigation from challenges screen
   useEffect(() => {
-  if (params.mode === 'challenge' && params.levelId && params.autoStart === 'true') {
-    const levelId = parseInt(params.levelId as string);
-    const challengeLevel = CHALLENGE_LEVELS.find(l => l.id === levelId);
-    
-    if (challengeLevel) {
-      setSelectedMode('challenge');
-      setSelectedLevel(challengeLevel);
-      startGame('challenge', challengeLevel);
-    }
-  }
-  // only run when these specific values change
-}, [params.mode, params.levelId, params.autoStart]);
+    if (params.mode === 'challenge' && params.levelId && params.autoStart === 'true') {
+      const levelId = parseInt(params.levelId as string);
+      const challengeLevel = CHALLENGE_LEVELS.find(l => l.id === levelId);
 
+      if (challengeLevel) {
+        setSelectedMode('challenge');
+        setSelectedLevel(challengeLevel);
+        startGame('challenge', challengeLevel);
+      }
+    }
+    // only run when these specific values change
+  }, [params.mode, params.levelId, params.autoStart]);
+
+  // Handle app state changes for better performance
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Pause animations and save state when app goes to background
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+        setIsPaused(true);
+
+        // Save current game state
+        runOnJS(() => {
+          saveGameData({
+            ...gameState,
+            coins: themeState.coins,
+            currentTheme: themeState.currentTheme,
+            unlockedThemes: themeState.unlockedThemes,
+          });
+        })();
+      } else if (nextAppState === 'active' && gameState.gameStarted && !gameState.gameOver) {
+        // Resume animations when app becomes active
+        setIsPaused(false);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [gameState, themeState]);
 
   // Load saved game data on mount
   useEffect(() => {
@@ -95,6 +139,7 @@ export default function StackTowerGame() {
           currentTheme: savedData.currentTheme || 'default',
           unlockedThemes: savedData.unlockedThemes || ['default'],
         });
+        setIsDataLoaded(true);
       }
 
       // Check for daily challenge
@@ -109,22 +154,47 @@ export default function StackTowerGame() {
     loadSavedData();
   }, []);
 
+  // Optimized save with debouncing
+  const saveGameDataDebounced = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Save game data when relevant state changes
   useEffect(() => {
-    saveGameData({
-      coins: themeState.coins,
-      currentTheme: themeState.currentTheme,
-      unlockedThemes: themeState.unlockedThemes,
-      unlockedSkins: gameState.unlockedSkins,
-      dailyChallengeCompleted: gameState.dailyChallengeCompleted,
-      lastDailyChallengeDate: gameState.lastDailyChallengeDate,
-    });
+    if (!isDataLoaded) return; // ⬅ prevent overwriting before load
+    // Debounce saves to prevent excessive storage operations
+    if (saveGameDataDebounced.current) {
+      clearTimeout(saveGameDataDebounced.current);
+    }
+
+    saveGameDataDebounced.current = setTimeout(() => {
+      saveGameData({
+        coins: themeState.coins,
+        currentTheme: themeState.currentTheme,
+        unlockedThemes: themeState.unlockedThemes,
+        unlockedSkins: gameState.unlockedSkins,
+        dailyChallengeCompleted: gameState.dailyChallengeCompleted,
+        lastDailyChallengeDate: gameState.lastDailyChallengeDate,
+        challengeProgress: themeState.challengeProgress,
+        currentUnlockedLevel: themeState.currentUnlockedLevel,
+        highScores: themeState.highScores,
+        totalGamesPlayed: themeState.totalGamesPlayed,
+      });
+    }, 1500); // 500ms debounce
+
+    return () => {
+      if (saveGameDataDebounced.current) {
+        clearTimeout(saveGameDataDebounced.current);
+      }
+    };
   }, [
     themeState.coins,
     themeState.currentTheme,
     themeState.unlockedThemes,
     gameState.dailyChallengeCompleted,
     gameState.lastDailyChallengeDate,
+    themeState.challengeProgress,
+    themeState.currentUnlockedLevel,
+    themeState.highScores,
+    themeState.totalGamesPlayed,
   ]);
 
   // Handle game state changes and flow transitions
@@ -152,65 +222,106 @@ export default function StackTowerGame() {
     }
   }, [gameState.mode, gameState.gameStarted, gameState.gameOver, isPaused, updateTimer]);
 
+  // Optimized animation loop with frame rate control
   // Animate moving block
-  useEffect(() => {
-    if (!gameState.currentBlock || !gameState.currentBlock.isMoving) return;
+  // Optimized animation loop with interpolation for higher speeds
+ useEffect(() => {
+  if (!gameState.currentBlock || !gameState.currentBlock.isMoving) return;
 
-    const animateBlock = () => {
-      const block = gameState.currentBlock!;
+  isAnimatingRef.current = true;
+  lastFrameTimeRef.current = performance.now();
+  accumulatedTimeRef.current = 0;
+
+  const animateBlock = (currentTime: number) => {
+    if (!isAnimatingRef.current || !gameState.currentBlock) return;
+
+    const deltaTime = Math.min(currentTime - lastFrameTimeRef.current, MAX_DELTA_TIME);
+    lastFrameTimeRef.current = currentTime;
+    accumulatedTimeRef.current += deltaTime;
+
+    // IMPROVED: More consistent timestep for smoother movement at reduced speeds
+    while (accumulatedTimeRef.current >= TARGET_FRAME_TIME) {
+      const block = gameState.currentBlock;
+      if (!block) break;
+
       let newX = block.x;
       let newDirection = block.direction;
 
+      // ENHANCED: Better movement calculation with improved sub-pixel precision
+      const moveDistance = block.speed * (TARGET_FRAME_TIME / 16.67); // Normalize to 60fps baseline
+      
+      // IMPROVED: Smoother direction changes with better boundary handling
       if (block.direction === 'right') {
-        newX += block.speed;
+        newX += moveDistance;
         if (newX + block.width >= GAME_CONFIG.SCREEN_WIDTH) {
           newDirection = 'left';
-          newX = GAME_CONFIG.SCREEN_WIDTH - block.width;
+          // More precise boundary positioning to reduce slippery effect
+          newX = GAME_CONFIG.SCREEN_WIDTH - block.width - 0.1;
         }
       } else {
-        newX -= block.speed;
+        newX -= moveDistance;
         if (newX <= 0) {
           newDirection = 'right';
-          newX = 0;
+          // More precise boundary positioning
+          newX = 0.1;
         }
       }
 
-      updateCurrentBlockPosition(newX, newDirection);
-
-      if (gameState.gameStarted && !gameState.gameOver && !isPaused) {
-        animationRef.current = requestAnimationFrame(animateBlock);
+      // OPTIMIZED: Update position with better threshold for smoother movement
+      const positionDelta = Math.abs(newX - block.x);
+      if (positionDelta > POSITION_UPDATE_THRESHOLD || newDirection !== block.direction) {
+        updateCurrentBlockPosition(newX, newDirection);
       }
-    };
 
-    animationRef.current = requestAnimationFrame(animateBlock);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, isPaused, updateCurrentBlockPosition]);
-
-  // Camera animation based on tower height
-  useEffect(() => {
-    const blockHeight = 40;
-    const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
-    const halfScreenHeight = screenHeight / 2;
-    const currentTowerHeightPixels = gameState.tower_height * blockHeight;
-
-    let targetY = 0;
-    let targetScale = 1;
-
-    if (currentTowerHeightPixels > halfScreenHeight) {
-      const excessHeight = currentTowerHeightPixels - halfScreenHeight;
-      const slowMovementFactor = 0.5;
-      targetY = excessHeight * slowMovementFactor;
-      targetScale = Math.max(0.9, 1 - (excessHeight / screenHeight) * 0.1);
+      accumulatedTimeRef.current -= TARGET_FRAME_TIME;
     }
 
-    cameraY.value = withTiming(targetY, { duration: 1000 });
-    cameraScale.value = withTiming(targetScale, { duration: 1000 });
-  }, [gameState.tower_height]);
+    if (gameState.gameStarted && !gameState.gameOver && !isPaused && isAnimatingRef.current) {
+      animationRef.current = requestAnimationFrame(animateBlock);
+    }
+  };
+
+  animationRef.current = requestAnimationFrame(animateBlock);
+
+  return () => {
+    isAnimatingRef.current = false;
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+  };
+}, [gameState.currentBlock, gameState.gameStarted, gameState.gameOver, isPaused, updateCurrentBlockPosition]);
+
+
+  // Optimized camera animation with reduced frequency
+  // Camera animation based on tower height
+  // Optimized camera animation with faster response for high-speed gameplay
+  useEffect(() => {
+  const blockHeight = 40;
+  const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
+  const halfScreenHeight = screenHeight / 2;
+  const currentTowerHeightPixels = gameState.tower_height * blockHeight;
+
+  let targetY = 0;
+  let targetScale = 1;
+
+  if (currentTowerHeightPixels > halfScreenHeight) {
+    const excessHeight = currentTowerHeightPixels - halfScreenHeight;
+    // BALANCED camera movement - responsive but not too fast
+    const movementFactor = 0.65; // Slightly reduced from 0.7 for better balance with reduced block speeds
+    targetY = excessHeight * movementFactor;
+    targetScale = Math.max(0.87, 1 - (excessHeight / screenHeight) * 0.13); // Slight adjustment for better visibility
+  }
+
+  // IMPROVED camera transitions with better easing for smoother feel
+  cameraY.value = withTiming(targetY, {
+    duration: 450, // Slightly increased from 400ms for smoother camera movement
+    easing: Easing.out(Easing.cubic) // Smooth easing that matches reduced block speeds
+  });
+  cameraScale.value = withTiming(targetScale, {
+    duration: 450,
+    easing: Easing.out(Easing.cubic)
+  });
+}, [gameState.tower_height]);
 
   // Update high score and handle challenge completion
   useEffect(() => {
@@ -234,7 +345,7 @@ export default function StackTowerGame() {
         const blocksStacked = gameState.tower_height - 1;
         const perfectBlocks = gameState.combo; // This should be tracked properly
         const completed = blocksStacked >= selectedLevel.targetBlocks;
-        
+
         if (completed) {
           starsEarned = calculateChallengeStars(
             selectedLevel,
@@ -246,14 +357,14 @@ export default function StackTowerGame() {
 
           const previousStars = themeState.challengeProgress[selectedLevel.id]?.stars || 0;
           const isNewStars = starsEarned > previousStars;
-          
+
           const challengeCoins = completeChallengeLevel(
             selectedLevel.id,
             starsEarned,
             gameState.score,
             isNewStars
           );
-          
+
           totalCoinsEarned += challengeCoins;
           setChallengeStarsEarned(starsEarned);
         }
@@ -293,6 +404,7 @@ export default function StackTowerGame() {
     return false;
   };
 
+  // Memoized camera style to prevent unnecessary recalculations
   const cameraStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -300,7 +412,7 @@ export default function StackTowerGame() {
         { scale: cameraScale.value },
       ],
     };
-  });
+  }, []);
 
   // Game flow handlers
   const handleModeSelect = (mode: GameMode) => {
@@ -319,8 +431,10 @@ export default function StackTowerGame() {
 
   const handlePlayAgain = () => {
     // Reset camera
-    cameraY.value = withTiming(0, { duration: 500 });
-    cameraScale.value = withTiming(1, { duration: 500 });
+    cancelAnimation(cameraY);
+    cancelAnimation(cameraScale);
+    cameraY.value = withTiming(0, { duration: 300 });
+    cameraScale.value = withTiming(1, { duration: 300 });
 
     // Reset coins and stars earned counters
     setCoinsEarnedThisGame(0);
@@ -339,10 +453,12 @@ export default function StackTowerGame() {
       const nextLevel = CHALLENGE_LEVELS.find(l => l.id === selectedLevel.id + 1);
       if (nextLevel) {
         setSelectedLevel(nextLevel);
-        
+
         // Reset camera
-        cameraY.value = withTiming(0, { duration: 500 });
-        cameraScale.value = withTiming(1, { duration: 500 });
+        cancelAnimation(cameraY);
+        cancelAnimation(cameraScale);
+        cameraY.value = withTiming(0, { duration: 300 });
+        cameraScale.value = withTiming(1, { duration: 300 });
 
         // Reset counters
         setCoinsEarnedThisGame(0);
@@ -356,8 +472,10 @@ export default function StackTowerGame() {
   const handleBackToModeSelect = () => {
     // Reset everything
     resetGame();
-    cameraY.value = withTiming(0, { duration: 500 });
-    cameraScale.value = withTiming(1, { duration: 500 });
+    cancelAnimation(cameraY);
+    cancelAnimation(cameraScale);
+    cameraY.value = withTiming(0, { duration: 300 });
+    cameraScale.value = withTiming(1, { duration: 300 });
     setCoinsEarnedThisGame(0);
     setChallengeStarsEarned(0);
     setGameFlow('mode_select');
@@ -380,8 +498,10 @@ export default function StackTowerGame() {
 
   const handlePauseRestart = () => {
     // Reset camera
-    cameraY.value = withTiming(0, { duration: 500 });
-    cameraScale.value = withTiming(1, { duration: 500 });
+    cancelAnimation(cameraY);
+    cancelAnimation(cameraScale);
+    cameraY.value = withTiming(0, { duration: 300 });
+    cameraScale.value = withTiming(1, { duration: 300 });
 
     // Reset coins earned counter
     setCoinsEarnedThisGame(0);
@@ -401,8 +521,10 @@ export default function StackTowerGame() {
   const handlePauseHome = () => {
     // Reset everything
     resetGame();
-    cameraY.value = withTiming(0, { duration: 500 });
-    cameraScale.value = withTiming(1, { duration: 500 });
+    cancelAnimation(cameraY);
+    cancelAnimation(cameraScale);
+    cameraY.value = withTiming(0, { duration: 300 });
+    cameraScale.value = withTiming(1, { duration: 300 });
     setCoinsEarnedThisGame(0);
     setChallengeStarsEarned(0);
     setIsPaused(false);
@@ -433,12 +555,23 @@ export default function StackTowerGame() {
     return undefined;
   };
 
-  const unlockedThemesList = THEMES.filter(theme =>
-    themeState.unlockedThemes.includes(theme.id)
-  ).map(theme => ({
-    ...theme,
-    unlocked: true,
-  }));
+  // Check if next level exists
+  const hasNextLevel = () => {
+    if (selectedMode === 'challenge' && selectedLevel) {
+      return CHALLENGE_LEVELS.some(l => l.id === selectedLevel.id + 1);
+    }
+    return false;
+  };
+
+  // Memoize expensive calculations
+  const unlockedThemesList = React.useMemo(() =>
+    THEMES.filter(theme =>
+      themeState.unlockedThemes.includes(theme.id)
+    ).map(theme => ({
+      ...theme,
+      unlocked: true,
+    })), [themeState.unlockedThemes]
+  );
 
   const renderGameUI = () => {
     const commonProps = {
@@ -487,14 +620,6 @@ export default function StackTowerGame() {
   const isChallengeCompleted = () => {
     if (gameState.mode === 'challenge' && selectedLevel) {
       return (gameState.tower_height - 1) >= selectedLevel.targetBlocks;
-    }
-    return false;
-  };
-
-  // Check if next level exists
-  const hasNextLevel = () => {
-    if (selectedMode === 'challenge' && selectedLevel) {
-      return CHALLENGE_LEVELS.some(l => l.id === selectedLevel.id + 1);
     }
     return false;
   };

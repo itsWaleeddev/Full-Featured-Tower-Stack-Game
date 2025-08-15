@@ -35,7 +35,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 }) => {
   const isNewHighScore = score > 0 && score >= highScore;
   const isChallengeMode = mode === 'challenge';
-  
+
   const getModeDisplayName = (mode: GameMode): string => {
     switch (mode) {
       case 'classic':
@@ -85,116 +85,118 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
-            style={styles.background}
-          />
-          
-          {/* Header */}
-          <View style={styles.header}>
-            {getResultIcon()}
-            <Text style={[
-              styles.resultText,
-              { color: (isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore) ? '#FFD700' : '#fff' }
-            ]}>
-              {getResultMessage()}
-            </Text>
-            <Text style={styles.modeText}>{getModeDisplayName(mode)}</Text>
-          </View>
+    <View style={{flex:1}}>
+      <Modal visible={visible} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.container}>
+            <LinearGradient
+              colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
+              style={styles.background}
+            />
 
-          {/* Challenge Stars */}
-          {isChallengeMode && challengeCompleted && (
-            <View style={styles.challengeSection}>
-              {renderStars(challengeStars)}
-              <Text style={styles.starsText}>
-                {challengeStars}/3 Stars Earned!
-              </Text>
-            </View>
-          )}
-
-          {/* Score Section */}
-          <View style={styles.scoreSection}>
-            <View style={styles.scoreContainer}>
-              <Text style={styles.scoreLabel}>Final Score</Text>
+            {/* Header */}
+            <View style={styles.header}>
+              {getResultIcon()}
               <Text style={[
-                styles.scoreValue,
-                ((isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore)) && styles.highlightScore
+                styles.resultText,
+                { color: (isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore) ? '#FFD700' : '#fff' }
               ]}>
-                {score.toLocaleString()}
+                {getResultMessage()}
               </Text>
+              <Text style={styles.modeText}>{getModeDisplayName(mode)}</Text>
             </View>
-            
-            {!isChallengeMode && (
-              <View style={styles.highScoreContainer}>
-                <Text style={styles.highScoreLabel}>High Score</Text>
-                <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
+
+            {/* Challenge Stars */}
+            {isChallengeMode && challengeCompleted && (
+              <View style={styles.challengeSection}>
+                {renderStars(challengeStars)}
+                <Text style={styles.starsText}>
+                  {challengeStars}/3 Stars Earned!
+                </Text>
               </View>
             )}
-          </View>
 
-          {/* Coins Earned */}
-          {coinsEarned > 0 && (
-            <View style={styles.coinsSection}>
-              <View style={styles.coinsEarned}>
-                <Coins size={20} color="#FFD700" />
-                <Text style={styles.coinsText}>+{coinsEarned} coins earned!</Text>
+            {/* Score Section */}
+            <View style={styles.scoreSection}>
+              <View style={styles.scoreContainer}>
+                <Text style={styles.scoreLabel}>Final Score</Text>
+                <Text style={[
+                  styles.scoreValue,
+                  ((isChallengeMode && challengeCompleted) || (!isChallengeMode && isNewHighScore)) && styles.highlightScore
+                ]}>
+                  {score.toLocaleString()}
+                </Text>
               </View>
-            </View>
-          )}
 
-          {/* Action Buttons */}
-          <View style={styles.actionsContainer}>
-            {/* Primary action - different for challenge mode */}
-            {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel ? (
-              <TouchableOpacity style={styles.primaryButton} onPress={onPlayNextLevel}>
-                <LinearGradient
-                  colors={['#4CAF50', '#45A049']}
-                  style={styles.buttonGradient}
-                >
-                  <ChevronRight size={20} color="#fff" style={styles.buttonIcon} />
-                  <Text style={styles.primaryButtonText}>Next Level</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.primaryButton} onPress={onPlayAgain}>
-                <LinearGradient
-                  colors={['#4facfe', '#00f2fe']}
-                  style={styles.buttonGradient}
-                >
-                  <RotateCcw size={20} color="#fff" style={styles.buttonIcon} />
-                  <Text style={styles.primaryButtonText}>
-                    {isChallengeMode && !challengeCompleted ? 'Try Again' : 'Play Again'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              {!isChallengeMode && (
+                <View style={styles.highScoreContainer}>
+                  <Text style={styles.highScoreLabel}>High Score</Text>
+                  <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Coins Earned */}
+            {coinsEarned > 0 && (
+              <View style={styles.coinsSection}>
+                <View style={styles.coinsEarned}>
+                  <Coins size={20} color="#FFD700" />
+                  <Text style={styles.coinsText}>+{coinsEarned} coins earned!</Text>
+                </View>
+              </View>
             )}
 
-            {/* Secondary buttons */}
-            <View style={styles.secondaryButtons}>
-              {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel && (
-                <TouchableOpacity style={styles.secondaryButton} onPress={onPlayAgain}>
-                  <RotateCcw size={18} color="#fff" />
-                  <Text style={styles.secondaryButtonText}>Retry</Text>
+            {/* Action Buttons */}
+            <View style={styles.actionsContainer}>
+              {/* Primary action - different for challenge mode */}
+              {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel ? (
+                <TouchableOpacity style={styles.primaryButton} onPress={onPlayNextLevel}>
+                  <LinearGradient
+                    colors={['#4CAF50', '#45A049']}
+                    style={styles.buttonGradient}
+                  >
+                    <ChevronRight size={20} color="#fff" style={styles.buttonIcon} />
+                    <Text style={styles.primaryButtonText}>Next Level</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.primaryButton} onPress={onPlayAgain}>
+                  <LinearGradient
+                    colors={['#4facfe', '#00f2fe']}
+                    style={styles.buttonGradient}
+                  >
+                    <RotateCcw size={20} color="#fff" style={styles.buttonIcon} />
+                    <Text style={styles.primaryButtonText}>
+                      {isChallengeMode && !challengeCompleted ? 'Try Again' : 'Play Again'}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={styles.secondaryButton} onPress={onModeSelect}>
-                <Home size={18} color="#fff" />
-                <Text style={styles.secondaryButtonText}>Mode Select</Text>
-              </TouchableOpacity>
+              {/* Secondary buttons */}
+              <View style={styles.secondaryButtons}>
+                {isChallengeMode && challengeCompleted && hasNextLevel && onPlayNextLevel && (
+                  <TouchableOpacity style={styles.secondaryButton} onPress={onPlayAgain}>
+                    <RotateCcw size={18} color="#fff" />
+                    <Text style={styles.secondaryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                )}
 
-              <TouchableOpacity style={styles.secondaryButton} onPress={onShare}>
-                <Share size={18} color="#fff" />
-                <Text style={styles.secondaryButtonText}>Share</Text>
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.secondaryButton} onPress={onModeSelect}>
+                  <Home size={18} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Mode Select</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.secondaryButton} onPress={onShare}>
+                  <Share size={18} color="#fff" />
+                  <Text style={styles.secondaryButtonText}>Share</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   );
 };
 

@@ -17,40 +17,42 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   onHome,
 }) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
-            style={styles.background}
-          />
-          
-          <Text style={styles.title}>Game Paused</Text>
-          
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={onResume}>
-              <LinearGradient
-                colors={['#4facfe', '#00f2fe']}
-                style={styles.buttonGradient}
-              >
-                <Play size={20} color="#fff" style={styles.buttonIcon} />
-                <Text style={styles.primaryButtonText}>Resume</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+    <View style ={{flex:1}}>
+      <Modal visible={visible} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.container}>
+            <LinearGradient
+              colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
+              style={styles.background}
+            />
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={onRestart}>
-              <RotateCcw size={18} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.secondaryButtonText}>Restart</Text>
-            </TouchableOpacity>
+            <Text style={styles.title}>Game Paused</Text>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={onHome}>
-              <Home size={18} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.secondaryButtonText}>Main Menu</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity style={styles.primaryButton} onPress={onResume}>
+                <LinearGradient
+                  colors={['#4facfe', '#00f2fe']}
+                  style={styles.buttonGradient}
+                >
+                  <Play size={20} color="#fff" style={styles.buttonIcon} />
+                  <Text style={styles.primaryButtonText}>Resume</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.secondaryButton} onPress={onRestart}>
+                <RotateCcw size={18} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.secondaryButtonText}>Restart</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.secondaryButton} onPress={onHome}>
+                <Home size={18} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.secondaryButtonText}>Main Menu</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </View>
   );
 };
 

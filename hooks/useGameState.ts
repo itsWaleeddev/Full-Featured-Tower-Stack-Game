@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
+import { runOnJS } from 'react-native-reanimated';
 import { GameState, Block, GameMode, ChallengeLevel } from '../types/game';
 import { createInitialBlock, createNewBlock, calculateCollision, calculateScore } from '../utils/gameLogic';
 import { GAME_CONFIG, CHALLENGE_LEVELS } from '../constants/game';
+import { saveGameData } from '../utils/storage';
 
 export const useGameState = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -24,6 +26,7 @@ export const useGameState = () => {
     rewardsGranted: false,
   });
 
+  // Memoized functions to prevent unnecessary re-renders
   const startGame = useCallback((mode: GameMode = 'classic', level?: ChallengeLevel) => {
     const initialBlock = createInitialBlock();
     const firstMovingBlock = createNewBlock(initialBlock, 1, mode, level);
@@ -43,6 +46,15 @@ export const useGameState = () => {
       timeRemaining: mode === 'timeAttack' ? GAME_CONFIG.TIME_ATTACK_DURATION : level?.timeLimit,
       rewardsGranted: false,
     }));
+
+    // Save game state immediately when starting
+    runOnJS(() => {
+      saveGameData({
+        mode,
+        level: level?.id,
+        gameStarted: true,
+      });
+    })();
   }, []);
 
   const dropBlock = useCallback(() => {
@@ -118,6 +130,7 @@ export const useGameState = () => {
     return false;
   };
 
+  // Optimized timer update with reduced frequency
   const updateTimer = useCallback(() => {
     setGameState(prev => {
       if (prev.mode !== 'timeAttack' || !prev.gameStarted || prev.gameOver) return prev;
@@ -141,6 +154,7 @@ export const useGameState = () => {
     });
   }, []);
 
+  // Batch state updates for better performance
   const resetGame = useCallback(() => {
     setGameState(prev => ({
       ...prev,
@@ -156,11 +170,27 @@ export const useGameState = () => {
       level: 1,
       rewardsGranted: false,
     }));
+
+    // Save reset state
+    runOnJS(() => {
+      saveGameData({
+        gameStarted: false,
+        gameOver: false,
+        score: 0,
+      });
+    })();
   }, []);
 
+  // Optimized position updates with reduced state changes
   const updateCurrentBlockPosition = useCallback((newX: number, newDirection?: 'left' | 'right') => {
     setGameState(prev => {
       if (!prev.currentBlock) return prev;
+
+      // Only update if position actually changed significantly
+      const positionChanged = Math.abs(prev.currentBlock.x - newX) > 0.5;
+      const directionChanged = newDirection && prev.currentBlock.direction !== newDirection;
+      
+      if (!positionChanged && !directionChanged) return prev;
 
       return {
         ...prev,

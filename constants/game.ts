@@ -1,21 +1,129 @@
 import { Dimensions } from 'react-native';
+import { Platform } from 'react-native';
 import { GameModeConfig, ChallengeLevel, Theme } from '../types/game';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Platform-specific optimizations
+// Platform-specific optimizations for high-speed gameplay
+const IS_ANDROID = Platform.OS === 'android';
+const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.95 : 1.0; // Slight reduction for Android stability
 
 export const GAME_CONFIG = {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
   BLOCK_HEIGHT: 40,
   INITIAL_BLOCK_WIDTH: 120,
-  INITIAL_SPEED: 2,
-  SPEED_INCREMENT: 0.3,
-  MAX_SPEED: 8,
-  PERFECT_THRESHOLD: 5,
-  COMBO_MULTIPLIER: 10,
-  BASE_SCORE: 100,
+  
+  // Optimized speeds for smooth high-speed gameplay
+  INITIAL_SPEED: 2.2 * PERFORMANCE_MULTIPLIER, // Slightly reduced from 2.5x for smoother start
+  SPEED_INCREMENT: 0.35 * PERFORMANCE_MULTIPLIER, // Balanced progression
+  MAX_SPEED: 9 * PERFORMANCE_MULTIPLIER, // Increased max speed with better control
+  
+  // Adjusted thresholds for high-speed gameplay
+  PERFECT_THRESHOLD: 6, // Slightly increased for fairer high-speed play
+  COMBO_MULTIPLIER: 12, // Increased to reward precision at speed
+  BASE_SCORE: 120, // Increased base score
+  
   TIME_ATTACK_DURATION: 60, // seconds
   DAILY_CHALLENGE_REWARD: 50,
+  
+  // Enhanced performance settings for smooth high-speed animation
+  ANIMATION_FRAME_RATE: IS_ANDROID ? 50 : 60, // Slightly reduced for Android stability
+  TARGET_FPS: 60,
+  FRAME_TIME_MS: 16.67, // Target frame time in milliseconds
+  MAX_FRAME_SKIP: 3, // Maximum frames to skip for stability
+  
+  // Smooth animation constants
+  POSITION_INTERPOLATION: 0.8, // Smoothing factor for position updates
+  CAMERA_SMOOTHING: 0.75, // Camera follow smoothing
+  BOUNCE_DAMPING: 0.85, // Block bounce damping for stability
+  
+  // Visual feedback timing
+  COLLISION_FEEDBACK_DURATION: 150, // ms
+  PERFECT_FEEDBACK_DURATION: 200, // ms
+  COMBO_DISPLAY_DURATION: 800, // ms
+  
+  // Performance optimizations
+  PARTICLE_COUNT: IS_ANDROID ? 6 : 10, // Reduced for better performance at high speeds
+  SHADOW_QUALITY: IS_ANDROID ? 'low' : 'medium', // Balanced visual quality
+  RENDER_AHEAD_BLOCKS: 2, // Number of blocks to pre-render
+  
+  // Touch responsiveness for high-speed gameplay
+  TOUCH_DEBOUNCE_MS: 50, // Prevent accidental double-taps
+  MIN_TOUCH_DISTANCE: 10, // Minimum touch movement to register
+} as const;
+
+// Enhanced animation configuration for smooth high-speed gameplay
+export const ANIMATION_CONFIG = {
+  // Block movement animations
+  BLOCK_EASING: 'linear', // Linear for consistent high-speed movement
+  BLOCK_DURATION: 200, // ms - Quick but smooth transitions
+  
+  // Camera animations - faster for high-speed gameplay
+  CAMERA_EASING: 'easeOutCubic',
+  CAMERA_DURATION: 350, // Reduced from 600ms for responsive feel
+  CAMERA_SPRING_CONFIG: {
+    damping: 0.8,
+    stiffness: 120,
+    mass: 0.8,
+  },
+  
+  // UI animations
+  UI_FADE_DURATION: 200,
+  UI_SLIDE_DURATION: 250,
+  
+  // Visual feedback animations for high-speed gameplay
+  SCORE_POP_DURATION: 300,
+  SCORE_POP_SCALE: 1.3,
+  COMBO_BOUNCE_DURATION: 400,
+  PERFECT_FLASH_DURATION: 150,
+  
+  // Collision effects - quick but noticeable
+  COLLISION_SHAKE_DURATION: 100,
+  COLLISION_SHAKE_INTENSITY: 3,
+  
+  // Screen transitions
+  TRANSITION_DURATION: 300,
+  MODAL_ANIMATION_DURATION: 250,
+} as const;
+
+// Performance thresholds for dynamic quality adjustment
+export const PERFORMANCE_THRESHOLDS = {
+  // FPS thresholds for quality adjustment
+  HIGH_PERFORMANCE_FPS: 55,
+  MEDIUM_PERFORMANCE_FPS: 45,
+  LOW_PERFORMANCE_FPS: 30,
+  
+  // Automatic quality adjustment
+  QUALITY_CHECK_INTERVAL: 2000, // ms
+  PERFORMANCE_SAMPLES: 10,
+  
+  // Memory usage thresholds (MB)
+  HIGH_MEMORY_USAGE: 150,
+  CRITICAL_MEMORY_USAGE: 200,
+} as const;
+
+// High-speed gameplay specific constants
+export const HIGH_SPEED_CONFIG = {
+  // Speed-based adjustments
+  SPEED_THRESHOLD_MEDIUM: 4,
+  SPEED_THRESHOLD_HIGH: 6,
+  SPEED_THRESHOLD_EXTREME: 8,
+  
+  // Visual aids for high-speed gameplay
+  MOTION_BLUR_INTENSITY: 0.3,
+  TRAIL_LENGTH: 3, // Number of trail segments
+  PREDICTION_LINE_LENGTH: 50, // pixels
+  
+  // Audio feedback timing (ms)
+  AUDIO_FEEDBACK_DELAY: 20,
+  AUDIO_FEEDBACK_PITCH_SCALE: 1.2,
+  
+  // Haptic feedback intensity
+  HAPTIC_INTENSITY_LIGHT: 0.3,
+  HAPTIC_INTENSITY_MEDIUM: 0.6,
+  HAPTIC_INTENSITY_STRONG: 0.9,
 } as const;
 
 export const COLORS = {
@@ -181,12 +289,12 @@ export const COLORS = {
   },
 } as const;
 
-export const ANIMATION_CONFIG = {
-  DURATION: 300,
-  BOUNCE_DURATION: 150,
-  CAMERA_SCALE_FACTOR: 0.02,
-  CAMERA_PAN_FACTOR: 5,
-} as const;
+// export const ANIMATION_CONFIG = {
+//   DURATION: IS_ANDROID ? 200 : 300,
+//   BOUNCE_DURATION: IS_ANDROID ? 100 : 150,
+//   CAMERA_SCALE_FACTOR: 0.02,
+//   CAMERA_PAN_FACTOR: 5,
+// } as const;
 
 export const GAME_MODES: GameModeConfig[] = [
   {

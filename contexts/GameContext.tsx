@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { AppState } from 'react-native';
 import { ChallengeLevel, ScoreRecord } from '../types/game';
 import { CHALLENGE_LEVELS } from '../constants/game';
-import { saveGameData, loadGameData } from '../utils/storage';
+import { saveGameData, loadGameData, flushPendingWrites } from '../utils/storage';
 
 interface ThemeState {
   coins: number;
@@ -139,6 +140,19 @@ const initialState: ThemeState = {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeState, dispatch] = useReducer(themeReducer, initialState);
 
+  // Handle app backgrounding for data persistence
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // Force save current state when app goes to background
+        flushPendingWrites().catch(console.error);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
+
   // Load saved data on mount
   useEffect(() => {
     const loadSavedData = async () => {
@@ -172,21 +186,37 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadSavedData();
   }, []);
 
+  // Debounced save to prevent excessive storage operations
+const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   // Save theme data when state changes
   useEffect(() => {
-    saveGameData({
-      coins: themeState.coins,
-      currentTheme: themeState.currentTheme,
-      unlockedThemes: themeState.unlockedThemes,
-      challengeProgress: themeState.challengeProgress,
-      currentUnlockedLevel: themeState.currentUnlockedLevel,
-      highScores: themeState.highScores,
-      totalGamesPlayed: themeState.totalGamesPlayed,
-      // Add other fields as needed to match your saveGameData interface
-      unlockedSkins: [],
-      dailyChallengeCompleted: false,
-      lastDailyChallengeDate: '',
-    });
+    // Debounce saves to prevent excessive storage operations
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveGameData({
+        coins: themeState.coins,
+        currentTheme: themeState.currentTheme,
+        unlockedThemes: themeState.unlockedThemes,
+        challengeProgress: themeState.challengeProgress,
+        currentUnlockedLevel: themeState.currentUnlockedLevel,
+        highScores: themeState.highScores,
+        totalGamesPlayed: themeState.totalGamesPlayed,
+        // Add other fields as needed to match your saveGameData interface
+        unlockedSkins: [],
+        dailyChallengeCompleted: false,
+        lastDailyChallengeDate: '',
+      });
+    }, 300); // 300ms debounce
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [
     themeState.coins, 
     themeState.currentTheme, 

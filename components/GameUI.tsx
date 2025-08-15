@@ -1,9 +1,11 @@
 import React from 'react';
+import { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  useSharedValue,
 } from 'react-native-reanimated';
 import { Pause } from 'lucide-react-native';
 
@@ -14,33 +16,47 @@ interface GameUIProps {
   onPause: () => void;
 }
 
-export const GameUI: React.FC<GameUIProps> = ({
+const GameUIComponent: React.FC<GameUIProps> = ({
   score,
   combo,
   gameStarted,
   onPause,
 }) => {
   
+  const scoreScale = useSharedValue(1);
+  const comboOpacity = useSharedValue(combo > 0 ? 1 : 0);
+  const comboTranslateY = useSharedValue(combo > 0 ? 0 : -10);
+
+  React.useEffect(() => {
+    scoreScale.value = withSpring(1.05, { damping: 15, stiffness: 400 });
+    setTimeout(() => {
+      scoreScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    }, 100);
+  }, [score]);
+
+  React.useEffect(() => {
+    comboOpacity.value = withTiming(combo > 0 ? 1 : 0, { duration: 200 });
+    comboTranslateY.value = combo > 0 
+      ? withSpring(0, { damping: 8, stiffness: 100 }) 
+      : withTiming(-10, { duration: 200 });
+  }, [combo]);
+
   const scoreAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        {
-          scale: withSpring(1.1, { damping: 10, stiffness: 300 }),
-        },
+        { scale: scoreScale.value },
       ],
     };
-  });
+  }, []);
 
   const comboAnimatedStyle = useAnimatedStyle(() => {
     return {
-      opacity: combo > 0 ? withTiming(1, { duration: 200 }) : withTiming(0, { duration: 200 }),
+      opacity: comboOpacity.value,
       transform: [
-        {
-          translateY: combo > 0 ? withSpring(0, { damping: 8, stiffness: 100 }) : withTiming(-10, { duration: 200 }),
-        },
+        { translateY: comboTranslateY.value },
       ],
     };
-  });
+  }, []);
 
   return (
     <View style={styles.gameUI}>
@@ -66,6 +82,14 @@ export const GameUI: React.FC<GameUIProps> = ({
   );
 };
 
+// Memoize GameUI to prevent unnecessary re-renders
+export const GameUI = memo(GameUIComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.score === nextProps.score &&
+    prevProps.combo === nextProps.combo &&
+    prevProps.gameStarted === nextProps.gameStarted
+  );
+});
 const styles = StyleSheet.create({
   gameUI: {
     position: 'absolute',
