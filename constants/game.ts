@@ -12,7 +12,7 @@ const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.95 : 1.0; // Slight reduction for 
 export const GAME_CONFIG = {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
-  BLOCK_HEIGHT: 40,
+  BLOCK_HEIGHT: 50,
   INITIAL_BLOCK_WIDTH: 150, //120
   
   // Optimized speeds for smooth high-speed gameplay
@@ -710,7 +710,7 @@ export const THEMES: Theme[] = [
       ['#0040ff', '#4d73ff'] as const,
     ] as const,
     unlocked: false,
-    cost: 100,
+    cost: 0, //100
     rarity: 'common',
     description: 'Cyberpunk vibes with electric colors'
   },
@@ -729,7 +729,7 @@ export const THEMES: Theme[] = [
       ['#00b894', '#00a085'] as const,
     ] as const,
     unlocked: false,
-    cost: 150,
+    cost: 0, //150
     rarity: 'common',
     description: 'Dive into underwater tranquility'
   },
@@ -748,7 +748,7 @@ export const THEMES: Theme[] = [
       ['#26c6da', '#00bcd4'] as const,
     ] as const,
     unlocked: false,
-    cost: 200,
+    cost: 0, //200
     rarity: 'rare',
     description: 'Golden hour warmth and beauty'
   },
@@ -767,7 +767,7 @@ export const THEMES: Theme[] = [
       ['#ff6347', '#ff7f50'] as const,
     ] as const,
     unlocked: false,
-    cost: 250,
+    cost: 0, //250
     rarity: 'rare',
     description: 'Mystical woodland adventure'
   },
@@ -786,7 +786,7 @@ export const THEMES: Theme[] = [
       ['#a0522d', '#d2691e'] as const,
     ] as const,
     unlocked: false,
-    cost: 300,
+    cost: 0, //300
     rarity: 'rare',
     description: 'Explosive molten power'
   },
@@ -805,7 +805,7 @@ export const THEMES: Theme[] = [
       ['#40e0d0', '#5ee6d3'] as const,
     ] as const,
     unlocked: false,
-    cost: 350,
+    cost: 0, //350
     rarity: 'epic',
     description: 'Pristine frozen wilderness'
   },
@@ -824,7 +824,7 @@ export const THEMES: Theme[] = [
       ['#ff9800', '#ffe0b2'] as const,
     ] as const,
     unlocked: false,
-    cost: 400,
+    cost: 0, //400
     rarity: 'epic',
     description: 'Journey through infinite space'
   },
@@ -843,7 +843,7 @@ export const THEMES: Theme[] = [
       ['#ff69b4', '#ff8cc8'] as const,
     ] as const,
     unlocked: false,
-    cost: 500,
+    cost: 0, //500
     rarity: 'epic',
     description: 'Pure magical spectrum'
   },
@@ -862,7 +862,7 @@ export const THEMES: Theme[] = [
       ['#ffa500', '#ffb84d'] as const,
     ] as const,
     unlocked: false,
-    cost: 750,
+    cost: 0, //750
     rarity: 'legendary',
     description: 'Luxurious royal elegance'
   },
@@ -881,7 +881,7 @@ export const THEMES: Theme[] = [
       ['#f0fff0', '#f8fff8'] as const,
     ] as const,
     unlocked: false,
-    cost: 1000,
+    cost: 0, //1000
     rarity: 'legendary',
     description: 'Ultimate prestige and brilliance'
   },
