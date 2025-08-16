@@ -16,8 +16,8 @@ const COMBO_MULTIPLIER = GAME_CONFIG.COMBO_MULTIPLIER;
 const PERFECT_THRESHOLD = GAME_CONFIG.PERFECT_THRESHOLD;
 
 // ENHANCED SPEED CONSTANTS for significant speed increase
-const SPEED_MULTIPLIER_BASE = 2.2; // Increased from 2.2 for much faster base speed
-const SPEED_INCREMENT_MULTIPLIER = 2.2; // Increased from 1.5 for faster progression
+const SPEED_MULTIPLIER_BASE = 3.2; // Increased from 2.2 for much faster base speed
+const SPEED_INCREMENT_MULTIPLIER = 2.8; // Increased from 1.5 for faster progression
 const MAX_SPEED_MULTIPLIER = 2.2; // Increased from 1.2 for higher top speeds
 const LEVEL_SPEED_BOOST = 0.15; // Additional speed boost per level for exponential growth
 
