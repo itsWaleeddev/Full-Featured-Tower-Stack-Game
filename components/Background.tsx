@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    top: SCREEN_HEIGHT * 0.3,
+    top: SCREEN_HEIGHT * 0.43,
     left: SCREEN_WIDTH * 0.5,
     transform: [{ translateX: -(SCREEN_WIDTH * 0.45) / 2 }], // Center horizontally for smaller rainbow
   },
