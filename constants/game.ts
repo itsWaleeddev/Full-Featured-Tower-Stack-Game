@@ -12,8 +12,8 @@ const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.95 : 1.0; // Slight reduction for 
 export const GAME_CONFIG = {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
-  BLOCK_HEIGHT: 50,
-  INITIAL_BLOCK_WIDTH: 150, //120
+  BLOCK_HEIGHT: 100, //100
+  INITIAL_BLOCK_WIDTH: 200, //120
   
   // Optimized speeds for smooth high-speed gameplay
   INITIAL_SPEED: 2.2 * PERFORMANCE_MULTIPLIER, // Slightly reduced from 2.5x for smoother start

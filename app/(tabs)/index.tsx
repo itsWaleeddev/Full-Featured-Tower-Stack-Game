@@ -328,7 +328,7 @@ export default function StackTowerGame() {
   // Camera animation based on tower height
   // Optimized camera animation with faster response for high-speed gameplay
   useEffect(() => {
-    const blockHeight = 40;
+    const blockHeight = 120;
     const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
     const halfScreenHeight = screenHeight / 2;
     const currentTowerHeightPixels = gameState.tower_height * blockHeight;

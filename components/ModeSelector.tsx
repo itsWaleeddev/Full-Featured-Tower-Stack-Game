@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   },
   mainMenuContainer: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 35,  //60
     paddingHorizontal: 15, //20
     paddingBottom: 20, //40
   },
