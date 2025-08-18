@@ -45,17 +45,24 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
     <View style={styles.container}>
       {/* Challenge Info Panel */}
       <View style={styles.challengePanel}>
-        <View style={styles.header}>
+        {/* Top row with pause button */}
+        <View style={styles.topRow}>
           <View style={styles.levelInfo}>
             <Text style={styles.levelName}>{level.name}</Text>
             <Text style={styles.objective}>{level.objective}</Text>
           </View>
 
-          {timeRemaining !== undefined && (
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerText}>{Math.ceil(timeRemaining)}s</Text>
-            </View>
-          )}
+          <View style={styles.rightControls}>
+            {timeRemaining !== undefined && (
+              <View style={styles.timerContainer}>
+                <Text style={styles.timerText}>{Math.ceil(timeRemaining)}s</Text>
+              </View>
+            )}
+            
+            <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
+              <Pause size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.progressSection}>
@@ -87,13 +94,6 @@ export const ChallengeUI: React.FC<ChallengeUIProps> = ({
       <Animated.View style={[styles.comboContainer, comboStyle]}>
         <Text style={styles.comboText}>COMBO x{combo}</Text>
       </Animated.View>
-
-      {/* Bottom Controls */}
-      <View style={styles.bottomControls}>
-        <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
-          <Pause size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -110,14 +110,14 @@ const styles = StyleSheet.create({
   },
   challengePanel: {
     position: 'absolute',
-    top: 60,
+    top: 35,
     left: 20,
     right: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 15,
     padding: 15,
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   levelInfo: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 15,
   },
   levelName: {
     color: '#fff',
@@ -138,6 +138,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
   },
+  rightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   timerContainer: {
     backgroundColor: '#ff4757',
     paddingHorizontal: 12,
@@ -148,6 +153,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  pauseButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 8,
+    borderRadius: 12,
+    minWidth: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressSection: {
     marginBottom: 10,
@@ -184,7 +197,7 @@ const styles = StyleSheet.create({
   },
   comboContainer: {
     position: 'absolute',
-    top: 220,
+    top: 200,
     alignSelf: 'center',
     left: 0,
     right: 0,
@@ -199,19 +212,5 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 60,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pauseButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 12,
-    borderRadius: 20,
   },
 });

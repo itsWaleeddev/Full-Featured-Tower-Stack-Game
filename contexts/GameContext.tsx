@@ -269,6 +269,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     if (coinsEarned > 0) {
+      console.log(coinsEarned);
       dispatch({ type: 'ADD_COINS', amount: coinsEarned });
     }
     

@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useMemo } from 'react';
 import { StyleSheet, Dimensions, View } from 'react-native';
+import { Platform } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -14,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getBackgroundColors } from '../utils/gameLogic';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const IS_ANDROID = Platform.OS === 'android';
 
 interface BackgroundProps {
   towerHeight: number;
@@ -22,6 +24,8 @@ interface BackgroundProps {
 
 // Optimized particle system for different themes
 const createParticles = (count: number, themeId: string) => {
+  // Android optimization: Reduce particle count
+  const adjustedCount = IS_ANDROID ? Math.floor(count * 0.6) : count;
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
@@ -683,7 +687,11 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
   const waveValue = useSharedValue(0);
 
   const particles = useMemo(() => {
-    const particleCount = themeId === 'galaxy' ? 50 : themeId === 'arctic' ? 30 : 20;
+    // Android optimization: Significantly reduce particles
+    let particleCount = themeId === 'galaxy' ? 50 : themeId === 'arctic' ? 30 : 20;
+    if (IS_ANDROID) {
+      particleCount = Math.floor(particleCount * 0.4); // 60% reduction for Android
+    }
     return createParticles(particleCount, themeId);
   }, [themeId]);
 
@@ -708,33 +716,33 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
     switch (themeId) {
       case 'galaxy':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 8000 }),
+          withTiming(1, { duration: IS_ANDROID ? 10000 : 8000 }), // Slower on Android
           -1,
           false
         );
         rotationValue.value = withRepeat(
-          withTiming(360, { duration: 20000 }),
+          withTiming(360, { duration: IS_ANDROID ? 25000 : 20000 }),
           -1,
           false
         );
         break;
       case 'arctic':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 4000 }),
+          withTiming(1, { duration: IS_ANDROID ? 5000 : 4000 }),
           -1,
           false
         );
         break;
       case 'neon':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 3000 }),
+          withTiming(1, { duration: IS_ANDROID ? 4000 : 3000 }),
           -1,
           false
         );
         pulseValue.value = withRepeat(
           withSequence(
-            withTiming(1.2, { duration: 1000 }),
-            withTiming(0.8, { duration: 1000 })
+            withTiming(IS_ANDROID ? 1.1 : 1.2, { duration: IS_ANDROID ? 1200 : 1000 }),
+            withTiming(IS_ANDROID ? 0.9 : 0.8, { duration: IS_ANDROID ? 1200 : 1000 })
           ),
           -1,
           true
@@ -742,14 +750,14 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         break;
       case 'volcanic':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 2500 }), // Continuous fast movement
+          withTiming(1, { duration: IS_ANDROID ? 3000 : 2500 }),
           -1,
           false
         );
         pulseValue.value = withRepeat(
           withSequence(
-            withTiming(1.1, { duration: 1500 }),
-            withTiming(0.9, { duration: 1500 })
+            withTiming(IS_ANDROID ? 1.05 : 1.1, { duration: IS_ANDROID ? 1800 : 1500 }),
+            withTiming(IS_ANDROID ? 0.95 : 0.9, { duration: IS_ANDROID ? 1800 : 1500 })
           ),
           -1,
           true
@@ -757,24 +765,24 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         break;
       case 'ocean':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 6000 }), // Slower animation
+          withTiming(1, { duration: IS_ANDROID ? 7000 : 6000 }),
           -1,
           false
         );
         waveValue.value = withRepeat(
-          withTiming(1, { duration: 8000 }), // Even slower for more realistic flow
+          withTiming(1, { duration: IS_ANDROID ? 9000 : 8000 }),
           -1,
           false
         );
         break;
       case 'sunset':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 6000 }),
+          withTiming(1, { duration: IS_ANDROID ? 7000 : 6000 }),
           -1,
           false
         );
         rotationValue.value = withRepeat(
-          withTiming(360, { duration: 20000 }),
+          withTiming(360, { duration: IS_ANDROID ? 24000 : 20000 }),
           -1,
           false
         );
@@ -782,16 +790,16 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
       case 'forest':
         animationValue.value = withRepeat(
           withSequence(
-            withTiming(1, { duration: 3000 }),
-            withTiming(-1, { duration: 3000 })
+            withTiming(1, { duration: IS_ANDROID ? 3500 : 3000 }),
+            withTiming(-1, { duration: IS_ANDROID ? 3500 : 3000 })
           ),
           -1,
           true
         );
         waveValue.value = withRepeat(
           withSequence(
-            withTiming(1, { duration: 3000 }),
-            withTiming(-1, { duration: 3000 })
+            withTiming(1, { duration: IS_ANDROID ? 3500 : 3000 }),
+            withTiming(-1, { duration: IS_ANDROID ? 3500 : 3000 })
           ),
           -1,
           true
@@ -799,12 +807,12 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         break;
       case 'rainbow':
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 5000 }),
+          withTiming(1, { duration: IS_ANDROID ? 6000 : 5000 }),
           -1,
           false
         );
         rotationValue.value = withRepeat(
-          withTiming(360, { duration: 8000 }),
+          withTiming(360, { duration: IS_ANDROID ? 10000 : 8000 }),
           -1,
           false
         );
@@ -812,8 +820,8 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
       case 'golden':
         pulseValue.value = withRepeat(
           withSequence(
-            withTiming(1.1, { duration: 2000 }),
-            withTiming(0.9, { duration: 2000 })
+            withTiming(IS_ANDROID ? 1.05 : 1.1, { duration: IS_ANDROID ? 2500 : 2000 }),
+            withTiming(IS_ANDROID ? 0.95 : 0.9, { duration: IS_ANDROID ? 2500 : 2000 })
           ),
           -1,
           true
@@ -822,8 +830,8 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
       case 'diamond':
         pulseValue.value = withRepeat(
           withSequence(
-            withTiming(1.05, { duration: 1500 }),
-            withTiming(0.95, { duration: 1500 })
+            withTiming(IS_ANDROID ? 1.03 : 1.05, { duration: IS_ANDROID ? 1800 : 1500 }),
+            withTiming(IS_ANDROID ? 0.97 : 0.95, { duration: IS_ANDROID ? 1800 : 1500 })
           ),
           -1,
           true
@@ -831,7 +839,7 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         break;
       default:
         animationValue.value = withRepeat(
-          withTiming(1, { duration: 8000 }),
+          withTiming(1, { duration: IS_ANDROID ? 9000 : 8000 }),
           -1,
           false
         );
@@ -905,7 +913,10 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
   }));
 
   // Render particles only for themes that need them
-  const shouldShowParticles = ['galaxy', 'arctic', 'neon'].includes(themeId);
+  // Android optimization: Reduce particle themes
+  const shouldShowParticles = IS_ANDROID 
+    ? ['galaxy'].includes(themeId) // Only galaxy particles on Android
+    : ['galaxy', 'arctic', 'neon'].includes(themeId);
 
   return (
     <Animated.View style={[styles.container, animatedStyle]}>

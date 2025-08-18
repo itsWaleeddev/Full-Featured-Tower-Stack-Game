@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { memo, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
@@ -17,6 +17,7 @@ import { GameMode, GameModeConfig } from '../types/game';
 import { GAME_MODES, THEMES } from '../constants/game';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const IS_ANDROID = Platform.OS === 'android';
 
 interface ModeSelectorProps {
   selectedMode: GameMode;
@@ -151,7 +152,9 @@ const MemoizedAnimatedBlock = memo(AnimatedBlock);
 
 // Enhanced Floating Particles Component
 const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) => {
-  const particles = useMemo(() => Array.from({ length: 12 }, (_, i) => i), []); // Reduced particles for performance
+  // Android optimization: Significantly reduce particles
+  const particleCount = IS_ANDROID ? 6 : 12;
+  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => i), []);
   
   return (
     <View style={styles.particlesContainer}>
@@ -169,31 +172,36 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
               opacity.value = 0;
               scale.value = 0.5;
               
+              // Android optimization: Slower, less frequent animations
+              const baseDuration = IS_ANDROID ? 10000 : 8000;
+              const randomDuration = IS_ANDROID ? 2000 : 4000;
+              const delayRange = IS_ANDROID ? 6000 : 4000;
+              
               translateY.value = withDelay(
-                Math.random() * 4000,
-                withTiming(-100, { duration: 8000 + Math.random() * 4000 }) // Reduced duration
+                Math.random() * delayRange,
+                withTiming(-100, { duration: baseDuration + Math.random() * randomDuration })
               );
               
               translateX.value = withDelay(
-                Math.random() * 4000,
-                withTiming((Math.random() - 0.5) * 100, { duration: 8000 + Math.random() * 4000 })
+                Math.random() * delayRange,
+                withTiming((Math.random() - 0.5) * 100, { duration: baseDuration + Math.random() * randomDuration })
               );
               
               opacity.value = withDelay(
-                Math.random() * 4000,
+                Math.random() * delayRange,
                 withSequence(
-                  withTiming(0.7, { duration: 1000 }),
-                  withTiming(0.7, { duration: 6000 }),
+                  withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: 1000 }),
+                  withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: IS_ANDROID ? 8000 : 6000 }),
                   withTiming(0, { duration: 1000 })
                 )
               );
 
               scale.value = withDelay(
-                Math.random() * 4000,
+                Math.random() * delayRange,
                 withTiming(1 + Math.random() * 0.3, { duration: 1500 })
               );
               
-              setTimeout(startAnimation, 8000 + Math.random() * 4000);
+              setTimeout(startAnimation, baseDuration + Math.random() * randomDuration);
             };
             
             startAnimation();
@@ -281,14 +289,24 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
 
   useEffect(() => {
     if (showAsMainMenu) {
-      titleScale.value = withDelay(300, withSpring(1, { damping: 8, stiffness: 100 }));
-      stackOffset.value = withDelay(600, withSpring(0, { damping: 10, stiffness: 80 }));
+      // Android optimization: Faster, simpler animations
+      const titleDelay = IS_ANDROID ? 200 : 300;
+      const stackDelay = IS_ANDROID ? 400 : 600;
+      const springConfig = IS_ANDROID 
+        ? { damping: 12, stiffness: 80 }
+        : { damping: 8, stiffness: 100 };
+      const stackSpringConfig = IS_ANDROID
+        ? { damping: 15, stiffness: 60 }
+        : { damping: 10, stiffness: 80 };
       
-      // Gamepad glow animation
+      titleScale.value = withDelay(titleDelay, withSpring(1, springConfig));
+      stackOffset.value = withDelay(stackDelay, withSpring(0, stackSpringConfig));
+      
+      // Android optimization: Slower glow animation
       gamepadGlow.value = withRepeat(
         withSequence(
-          withTiming(1, { duration: 1500 }),
-          withTiming(0.3, { duration: 1500 })
+          withTiming(1, { duration: IS_ANDROID ? 2000 : 1500 }),
+          withTiming(0.3, { duration: IS_ANDROID ? 2000 : 1500 })
         ),
         -1,
         true
@@ -372,39 +390,39 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
             {/* Animated Block Stack Display - NOW ABOVE THE TEXT */}
             <Animated.View style={[styles.blockStackContainer, stackAnimatedStyle]}>
               <MemoizedAnimatedBlock
-                width={120} //increased by 30
-                height={31} //increased by 5
+                width={IS_ANDROID ? 110 : 120} // Slightly smaller on Android
+                height={IS_ANDROID ? 28 : 31}
                 x={0}
                 y={0}
                 colors={blockColors[0]}
-                delay={800}
+                delay={IS_ANDROID ? 600 : 800}
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={105}
-                height={31}
-                x={7.5}
-                y={-28}
+                width={IS_ANDROID ? 95 : 105}
+                height={IS_ANDROID ? 28 : 31}
+                x={IS_ANDROID ? 7.5 : 7.5}
+                y={IS_ANDROID ? -25 : -28}
                 colors={blockColors[1]}
-                delay={1000}
+                delay={IS_ANDROID ? 800 : 1000}
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={125}
-                height={31}
-                x={-2.5}
-                y={-56}
+                width={IS_ANDROID ? 115 : 125}
+                height={IS_ANDROID ? 28 : 31}
+                x={IS_ANDROID ? -2.5 : -2.5}
+                y={IS_ANDROID ? -50 : -56}
                 colors={blockColors[2]}
-                delay={1200}
+                delay={IS_ANDROID ? 1000 : 1200}
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={95} 
-                height={31}
-                x={12.5}
-                y={-84}
+                width={IS_ANDROID ? 85 : 95}
+                height={IS_ANDROID ? 28 : 31}
+                x={IS_ANDROID ? 12.5 : 12.5}
+                y={IS_ANDROID ? -75 : -84}
                 colors={blockColors[3]}
-                delay={1400}
+                delay={IS_ANDROID ? 1200 : 1400}
                 themeId={currentTheme}
               />
             </Animated.View>

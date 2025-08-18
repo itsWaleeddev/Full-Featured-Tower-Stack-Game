@@ -70,10 +70,7 @@ const GameUIComponent: React.FC<GameUIProps> = ({
         <Animated.View style={[styles.comboContainer, comboAnimatedStyle]}>
           <Text style={styles.comboText}>COMBO x{combo}</Text>
         </Animated.View>
-      </View>
-
-      {/* Bottom Controls */}
-      <View style={styles.bottomControls}>
+        
         <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
           <Pause size={20} color="#fff" />
         </TouchableOpacity>
@@ -90,6 +87,7 @@ export const GameUI = memo(GameUIComponent, (prevProps, nextProps) => {
     prevProps.gameStarted === nextProps.gameStarted
   );
 });
+
 const styles = StyleSheet.create({
   gameUI: {
     position: 'absolute',
@@ -102,12 +100,12 @@ const styles = StyleSheet.create({
   },
   topUI: {
     position: 'absolute',
-    top: 60,
+    top: 35,
     left: 20,
     right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   scoreContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -139,18 +137,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 60,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   pauseButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     padding: 12,
     borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -7,7 +7,7 @@ interface SoundMap {
   [key: string]: Audio.Sound;
 }
 
-export type SoundType = 
+export type SoundType =
   | 'click'
   | 'chime'
   | 'success'
@@ -91,7 +91,7 @@ export const useSoundManager = () => {
                 shouldCorrectPitch: true,
               }
             );
-            
+
             if (isMounted) {
               soundsRef.current[key as SoundType] = sound;
             }
@@ -101,7 +101,7 @@ export const useSoundManager = () => {
         });
 
         await Promise.all(soundPromises);
-        
+
         if (isMounted) {
           setIsLoading(false);
           isInitializedRef.current = true;
@@ -157,6 +157,7 @@ export const useSoundManager = () => {
   }, []);
 
   const playSound = async (soundType: SoundType, volume: number = 0.7) => {
+    //console.log(soundEnabled);
     if (!soundEnabled || isLoading || !isInitializedRef.current) return;
 
     const sound = soundsRef.current[soundType];
@@ -168,7 +169,7 @@ export const useSoundManager = () => {
     try {
       // Get current status
       const status = await sound.getStatusAsync();
-      
+
       if (!status.isLoaded) {
         console.warn(`Sound ${soundType} not loaded`);
         return;

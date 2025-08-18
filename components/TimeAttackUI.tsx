@@ -65,18 +65,25 @@ export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Top UI */}
+      {/* Top UI - Repositioned layout */}
       <View style={styles.topRow}>
+        {/* Score on the left */}
+        <View style={styles.scoreContainer}>
+          <Text style={styles.scoreLabel}>Score</Text>
+          <Text style={styles.scoreValue}>{score.toLocaleString()}</Text>
+        </View>
+
+        {/* Timer in the center */}
         <Animated.View style={[styles.timerContainer, timerStyle]}>
           <Text style={styles.timerText}>
             {Math.ceil(timeRemaining)}s
           </Text>
         </Animated.View>
 
-        <View style={styles.scoreContainer}>
-          <Text style={styles.scoreLabel}>Score</Text>
-          <Text style={styles.scoreValue}>{score.toLocaleString()}</Text>
-        </View>
+        {/* Pause/Resume button on the right */}
+        <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
+          <Pause size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.progressBarContainer}>
@@ -86,13 +93,6 @@ export const TimeAttackUI: React.FC<TimeAttackUIProps> = ({
       <Animated.View style={[styles.comboContainer, comboStyle]}>
         <Text style={styles.comboText}>COMBO x{combo}</Text>
       </Animated.View>
-
-      {/* Bottom Controls */}
-      <View style={styles.bottomControls}>
-        <TouchableOpacity style={styles.pauseButton} onPress={onPause}>
-          <Pause size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -109,13 +109,34 @@ const styles = StyleSheet.create({
   },
   topRow: {
     position: 'absolute',
-    top: 60,
-    left: 20,
-    right: 20,
+    top: 35,
+    left: 15,
+    right: 15,
+    gap:10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  scoreContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 15,
+    minWidth: 100,
+    flex: 1,
+  },
+  scoreLabel: {
+    color: '#ccc',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  scoreValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   timerContainer: {
     paddingHorizontal: 20,
@@ -123,34 +144,26 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minWidth: 80,
     alignItems: 'center',
+    marginHorizontal: 10,
+    flex: 1,
   },
   timerText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
-  scoreContainer: {
+  pauseButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 15,
-    minWidth: 120,
-  },
-  scoreLabel: {
-    color: '#ccc',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  scoreValue: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    padding: 12,
+    borderRadius: 20,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressBarContainer: {
     position: 'absolute',
-    top: 120,
+    top: 100,
     left: 20,
     right: 20,
     height: 4,
@@ -165,7 +178,7 @@ const styles = StyleSheet.create({
   },
   comboContainer: {
     position: 'absolute',
-    top: 140,
+    top: 115,
     alignSelf: 'center',
     left: 0,
     right: 0,
@@ -180,19 +193,5 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 60,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pauseButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 12,
-    borderRadius: 20,
   },
 });
