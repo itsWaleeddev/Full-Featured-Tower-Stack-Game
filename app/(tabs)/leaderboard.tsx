@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award, Zap, Gamepad as GamepadIcon } from 'lucide-react-native';
+import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award, Zap, Gamepad as GamepadIcon, Shield, Flame, Swords } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
 import { useSound } from '@/contexts/SoundContext';
 import { GameMode, ScoreRecord } from '@/types/game';
@@ -31,6 +31,10 @@ const PREMIUM_COLORS = {
   border: 'rgba(148, 163, 184, 0.1)',
   borderLight: 'rgba(148, 163, 184, 0.2)',
   shadow: 'rgba(0, 0, 0, 0.3)',
+  // Difficulty colors
+  easy: '#10b981',
+  medium: '#f59e0b',
+  hard: '#ef4444',
 };
 
 const getModeIcon = (mode: GameMode, size: number = 20, color: string = '#fff') => {
@@ -43,6 +47,45 @@ const getModeIcon = (mode: GameMode, size: number = 20, color: string = '#fff') 
       return <Target size={size} color={color} />;
     default:
       return <Trophy size={size} color={color} />;
+  }
+};
+
+const getDifficultyIcon = (difficulty: string, size: number = 16) => {
+  switch (difficulty) {
+    case 'easy':
+      return <Shield size={size} color={PREMIUM_COLORS.easy} />;
+    case 'medium':
+      return <Flame size={size} color={PREMIUM_COLORS.medium} />;
+    case 'hard':
+      return <Swords size={size} color={PREMIUM_COLORS.hard} />;
+    default:
+      return <Shield size={size} color={PREMIUM_COLORS.easy} />;
+  }
+};
+
+const getDifficultyColor = (difficulty: string): string => {
+  switch (difficulty) {
+    case 'easy':
+      return PREMIUM_COLORS.easy;
+    case 'medium':
+      return PREMIUM_COLORS.medium;
+    case 'hard':
+      return PREMIUM_COLORS.hard;
+    default:
+      return PREMIUM_COLORS.easy;
+  }
+};
+
+const getDifficultyDisplayName = (difficulty: string): string => {
+  switch (difficulty) {
+    case 'easy':
+      return 'Easy';
+    case 'medium':
+      return 'Medium';
+    case 'hard':
+      return 'Hard';
+    default:
+      return 'Easy';
   }
 };
 
@@ -91,15 +134,17 @@ export default function LeaderboardScreen() {
   const [selectedMode, setSelectedMode] = useState<GameMode | 'all'>('all');
   const [recentScores, setRecentScores] = useState<ScoreRecord[]>([]);
   const [modeStats, setModeStats] = useState<{
-    classic: { gamesPlayed: number; averageScore: number; bestStreak: number };
-    timeAttack: { gamesPlayed: number; averageScore: number; bestTime: number };
-    challenge: { gamesPlayed: number; levelsCompleted: number; totalStars: number; averageStars: number; };
+    classic: { gamesPlayed: number; averageScore: number; bestStreak: number; difficultyBreakdown: Record<string, number> };
+    timeAttack: { gamesPlayed: number; averageScore: number; bestTime: number; difficultyBreakdown: Record<string, number> };
+    challenge: { gamesPlayed: number; levelsCompleted: number; totalStars: number; averageStars: number; difficultyBreakdown: Record<string, number> };
     totalGamesPlayed: number;
+    overallDifficultyBreakdown: Record<string, number>;
   }>({
-    classic: { gamesPlayed: 0, averageScore: 0, bestStreak: 0 },
-    timeAttack: { gamesPlayed: 0, averageScore: 0, bestTime: 0 },
-    challenge: { gamesPlayed: 0, levelsCompleted: 0, totalStars: 0, averageStars: 0 },
+    classic: { gamesPlayed: 0, averageScore: 0, bestStreak: 0, difficultyBreakdown: {} },
+    timeAttack: { gamesPlayed: 0, averageScore: 0, bestTime: 0, difficultyBreakdown: {} },
+    challenge: { gamesPlayed: 0, levelsCompleted: 0, totalStars: 0, averageStars: 0, difficultyBreakdown: {} },
     totalGamesPlayed: 0,
+    overallDifficultyBreakdown: {},
   });
 
   useFocusEffect(
@@ -113,11 +158,6 @@ export default function LeaderboardScreen() {
       };
     }, [selectedMode])
   );
-
-  // useEffect(() => {
-  //   loadRecentScores();
-  //   calculateModeStats();
-  // }, [selectedMode]);
 
   const loadRecentScores = async () => {
     try {
@@ -135,7 +175,19 @@ export default function LeaderboardScreen() {
       const timeAttackScores = await getTopScores('timeAttack', 100);
       const challengeScores = await getTopScores('challenge', 100);
 
+      // Helper function to calculate difficulty breakdown
+      const calculateDifficultyBreakdown = (scores: ScoreRecord[]) => {
+        const breakdown: Record<string, number> = { easy: 0, medium: 0, hard: 0 };
+        scores.forEach(score => {
+          console.log(score.difficulty)
+          const difficulty = score.difficulty || 'medium'; // Default to medium if not specified
+          breakdown[difficulty] = (breakdown[difficulty] || 0) + 1;
+        });
+        return breakdown;
+      };
+
       // Calculate classic mode stats
+      const classicDifficultyBreakdown = calculateDifficultyBreakdown(classicScores);
       const classicStats = {
         gamesPlayed: classicScores.length,
         averageScore: classicScores.length > 0
@@ -144,9 +196,11 @@ export default function LeaderboardScreen() {
         bestStreak: classicScores.length > 0
           ? Math.max(...classicScores.map(score => score.blocks))
           : 0,
+        difficultyBreakdown: classicDifficultyBreakdown,
       };
 
       // Calculate time attack mode stats
+      const timeAttackDifficultyBreakdown = calculateDifficultyBreakdown(timeAttackScores);
       const timeAttackStats = {
         gamesPlayed: timeAttackScores.length,
         averageScore: timeAttackScores.length > 0
@@ -155,12 +209,14 @@ export default function LeaderboardScreen() {
         bestTime: timeAttackScores.length > 0
           ? Math.max(...timeAttackScores.map(score => score.blocks)) // Using blocks as time indicator
           : 0,
+        difficultyBreakdown: timeAttackDifficultyBreakdown,
       };
 
       // Calculate challenge mode stats
       const challengeProgress = themeState.challengeProgress;
       const completedLevels = Object.values(challengeProgress).filter(level => level.completed);
       const totalStars = Object.values(challengeProgress).reduce((sum, level) => sum + level.stars, 0);
+      const challengeDifficultyBreakdown = calculateDifficultyBreakdown(challengeScores);
 
       const challengeStats = {
         gamesPlayed: challengeScores.length,
@@ -169,7 +225,12 @@ export default function LeaderboardScreen() {
         averageStars: completedLevels.length > 0
           ? Math.round((totalStars / completedLevels.length) * 10) / 10
           : 0,
+        difficultyBreakdown: challengeDifficultyBreakdown,
       };
+
+      // Calculate overall difficulty breakdown
+      const allScores = [...classicScores, ...timeAttackScores, ...challengeScores];
+      const overallDifficultyBreakdown = calculateDifficultyBreakdown(allScores);
 
       const totalGamesPlayed =
         classicStats.gamesPlayed +
@@ -181,6 +242,7 @@ export default function LeaderboardScreen() {
         timeAttack: timeAttackStats,
         challenge: challengeStats,
         totalGamesPlayed,
+        overallDifficultyBreakdown,
       });
     } catch (error) {
       console.error('Failed to calculate mode stats:', error);
@@ -210,6 +272,32 @@ export default function LeaderboardScreen() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Helper function to render difficulty breakdown
+  const renderDifficultyBreakdown = (breakdown: Record<string, number>) => {
+    const total = Object.values(breakdown).reduce((sum, count) => sum + count, 0);
+    if (total === 0) return null;
+
+    return (
+      <View style={styles.difficultyBreakdown}>
+        {Object.entries(breakdown)
+          .filter(([_, count]) => count > 0)
+          .map(([difficulty, count]) => (
+            <View key={difficulty} style={styles.difficultyChip}>
+              <LinearGradient
+                colors={[getDifficultyColor(difficulty) + '20', getDifficultyColor(difficulty) + '10']}
+                style={styles.difficultyChipGradient}
+              >
+                {getDifficultyIcon(difficulty, 14)}
+                <Text style={[styles.difficultyChipText, { color: getDifficultyColor(difficulty) }]}>
+                  {count}
+                </Text>
+              </LinearGradient>
+            </View>
+          ))}
+      </View>
+    );
   };
 
   return (
@@ -289,6 +377,27 @@ export default function LeaderboardScreen() {
           </View>
         </View>
 
+        {/* Overall Difficulty Breakdown */}
+        {modeStats.totalGamesPlayed > 0 && (
+          <View style={styles.overallDifficultySection}>
+            <Text style={styles.sectionTitle}>Difficulty Breakdown</Text>
+            <View style={styles.overallDifficultyCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.overallDifficultyGradient}
+              >
+                <View style={styles.overallDifficultyHeader}>
+                  <Text style={styles.overallDifficultyTitle}>Games by Difficulty</Text>
+                  <Text style={styles.overallDifficultySubtitle}>
+                    {modeStats.totalGamesPlayed} total games played
+                  </Text>
+                </View>
+                {renderDifficultyBreakdown(modeStats.overallDifficultyBreakdown)}
+              </LinearGradient>
+            </View>
+          </View>
+        )}
+
         {/* Game Mode Stats */}
         <View style={styles.gameModeStats}>
           <Text style={styles.sectionTitle}>Game Modes</Text>
@@ -318,6 +427,7 @@ export default function LeaderboardScreen() {
                     Avg: {modeStats.classic.averageScore.toLocaleString()}
                   </Text>
                 </View>
+                {modeStats.classic.gamesPlayed > 0 && renderDifficultyBreakdown(modeStats.classic.difficultyBreakdown)}
               </LinearGradient>
             </View>
 
@@ -345,6 +455,7 @@ export default function LeaderboardScreen() {
                     Best: {modeStats.timeAttack.bestTime} blocks
                   </Text>
                 </View>
+                {modeStats.timeAttack.gamesPlayed > 0 && renderDifficultyBreakdown(modeStats.timeAttack.difficultyBreakdown)}
               </LinearGradient>
             </View>
 
@@ -370,6 +481,7 @@ export default function LeaderboardScreen() {
                     Avg: {modeStats.challenge.averageStars} stars
                   </Text>
                 </View>
+                {modeStats.challenge.gamesPlayed > 0 && renderDifficultyBreakdown(modeStats.challenge.difficultyBreakdown)}
               </LinearGradient>
             </View>
           </View>
@@ -471,22 +583,37 @@ export default function LeaderboardScreen() {
                         <Text style={styles.scoreValue}>
                           {score.score.toLocaleString()}
                         </Text>
-                        <View style={styles.modeChip}>
-                          <LinearGradient
-                            colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.1)']}
-                            style={styles.modeChipGradient}
-                          >
-                            {getModeIcon(score.mode, 16, PREMIUM_COLORS.primary)}
-                            <Text style={styles.modeChipText}>
-                              {getModeDisplayName(score.mode)}
-                            </Text>
-                            {/* Show level for challenge mode */}
-                            {score.mode === 'challenge' && score.level && (
-                              <Text style={styles.levelChipText}>
-                                L{score.level}
+                        <View style={styles.scoreChips}>
+                          <View style={styles.modeChip}>
+                            <LinearGradient
+                              colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.1)']}
+                              style={styles.modeChipGradient}
+                            >
+                              {getModeIcon(score.mode, 16, PREMIUM_COLORS.primary)}
+                              <Text style={styles.modeChipText}>
+                                {getModeDisplayName(score.mode)}
                               </Text>
-                            )}
-                          </LinearGradient>
+                              {/* Show level for challenge mode */}
+                              {score.mode === 'challenge' && score.level && (
+                                <Text style={styles.levelChipText}>
+                                  L{score.level}
+                                </Text>
+                              )}
+                            </LinearGradient>
+                          </View>
+                          
+                          {/* Difficulty Chip */}
+                          <View style={styles.difficultyChipSmall}>
+                            <LinearGradient
+                              colors={[getDifficultyColor(score.difficulty || 'medium') + '20', getDifficultyColor(score.difficulty || 'medium') + '10']}
+                              style={styles.difficultyChipSmallGradient}
+                            >
+                              {getDifficultyIcon(score.difficulty || 'medium', 14)}
+                              <Text style={[styles.difficultyChipSmallText, { color: getDifficultyColor(score.difficulty || 'medium') }]}>
+                                {getDifficultyDisplayName(score.difficulty || 'medium')}
+                              </Text>
+                            </LinearGradient>
+                          </View>
                         </View>
                       </View>
 
@@ -639,6 +766,60 @@ const styles = StyleSheet.create({
     color: PREMIUM_COLORS.textTertiary,
     fontWeight: '600',
   },
+
+  // Overall Difficulty Section
+  overallDifficultySection: {
+    marginBottom: 14,
+  },
+  overallDifficultyCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+  },
+  overallDifficultyGradient: {
+    padding: 20,
+  },
+  overallDifficultyHeader: {
+    marginBottom: 16,
+  },
+  overallDifficultyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  overallDifficultySubtitle: {
+    fontSize: 14,
+    color: PREMIUM_COLORS.textSecondary,
+    fontWeight: '500',
+  },
+
+  // Difficulty Breakdown Styles
+  difficultyBreakdown: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  difficultyChip: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.1)',
+  },
+  difficultyChipGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  difficultyChipText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
   gameModeStats: {
     marginBottom: 14,
   },
@@ -804,7 +985,7 @@ const styles = StyleSheet.create({
   scoreHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   scoreValue: {
@@ -812,6 +993,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: PREMIUM_COLORS.textPrimary,
     letterSpacing: -0.5,
+    flex: 1,
+  },
+  scoreChips: {
+    flexDirection: 'column',
+    gap: 6,
+    alignItems: 'flex-end',
   },
   modeChip: {
     borderRadius: 12,
@@ -838,6 +1025,26 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     opacity: 0.8,
   },
+
+  // Small difficulty chip for score cards
+  difficultyChipSmall: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.1)',
+  },
+  difficultyChipSmallGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  difficultyChipSmallText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+
   scoreFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

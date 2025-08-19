@@ -18,7 +18,7 @@ interface ThemeState {
     challenge: number;
   };
   totalGamesPlayed: number;
-  selectedDifficulty: DifficultyLevel; // ← new
+  selectedDifficulty: DifficultyLevel;
 }
 
 interface ThemeContextType {
@@ -34,7 +34,7 @@ interface ThemeContextType {
   updateHighScore: (mode: GameMode, score: number) => boolean;
   incrementGamesPlayed: () => void;
   getHighScore: (mode: GameMode) => number;
-  setDifficulty: (difficulty: DifficultyLevel) => void; // ← added
+  setDifficulty: (difficulty: DifficultyLevel) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -188,6 +188,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             challengeProgress: mergedChallengeProgress,
             currentUnlockedLevel: savedData.currentUnlockedLevel || 1,
             highScores: savedData.highScores || { classic: 0, timeAttack: 0, challenge: 0 },
+            selectedDifficulty: savedData.selectedDifficulty || 'medium', // Include difficulty in saved data loading
           }
         });
       }
@@ -199,7 +200,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Debounced save to prevent excessive storage operations
   const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Save theme data when state changes
+  // Save theme data when state changes - now includes selectedDifficulty
   useEffect(() => {
     // Debounce saves to prevent excessive storage operations
     if (saveTimeoutRef.current) {
@@ -215,6 +216,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         currentUnlockedLevel: themeState.currentUnlockedLevel,
         highScores: themeState.highScores,
         totalGamesPlayed: themeState.totalGamesPlayed,
+        selectedDifficulty: themeState.selectedDifficulty, // Save difficulty setting
         // Add other fields as needed to match your saveGameData interface
         unlockedSkins: [],
         dailyChallengeCompleted: false,
@@ -234,7 +236,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     themeState.challengeProgress,
     themeState.currentUnlockedLevel,
     themeState.highScores,
-    themeState.totalGamesPlayed
+    themeState.totalGamesPlayed,
+    themeState.selectedDifficulty // Add selectedDifficulty to dependency array
   ]);
 
   const spendCoins = (amount: number) => {

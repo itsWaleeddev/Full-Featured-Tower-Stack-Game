@@ -375,6 +375,7 @@ export default function StackTowerGame() {
         date: new Date().toISOString(),
         level: gameState.level,
         blocks: gameState.tower_height - 1,
+        difficulty: gameState.selectedDifficulty
       });
 
       let totalCoinsEarned = 0;

@@ -1,3 +1,5 @@
+type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
 export interface Block {
   id: string;
   x: number;
@@ -41,6 +43,7 @@ export interface GameState {
     challenge: number;
   };
   totalGamesPlayed?: number;
+  selectedDifficulty: DifficultyLevel
 }
 
 export interface Position {
@@ -105,4 +108,5 @@ export interface ScoreRecord {
   date: string;
   level?: number;
   blocks: number;
+  difficulty: DifficultyLevel;
 }

@@ -72,6 +72,7 @@ export const saveGameData = async (gameData: Partial<GameState>): Promise<void> 
       currentUnlockedLevel: gameData.currentUnlockedLevel || 1,
       highScores: gameData.highScores || { classic: 0, timeAttack: 0, challenge: 0 },
       totalGamesPlayed: gameData.totalGamesPlayed || 0,
+      selectedDifficulty: gameData.selectedDifficulty || 'medium', // Added difficulty
     };
 
     // Use batch writing for better performance
@@ -81,27 +82,6 @@ export const saveGameData = async (gameData: Partial<GameState>): Promise<void> 
     console.error('Error saving game data:', error);
   }
 };
-
-// export const saveGameData = async (gameData: Partial<GameState>): Promise<void> => {
-//   try {
-//     const dataToSave = {
-//       coins: gameData.coins ?? 0,
-//       currentTheme: gameData.currentTheme ?? 'default',
-//       unlockedThemes: gameData.unlockedThemes ?? ['default'],
-//       unlockedSkins: gameData.unlockedSkins ?? [],
-//       dailyChallengeCompleted: gameData.dailyChallengeCompleted ?? false,
-//       lastDailyChallengeDate: gameData.lastDailyChallengeDate ?? '',
-//       challengeProgress: gameData.challengeProgress ?? {},
-//       currentUnlockedLevel: gameData.currentUnlockedLevel ?? 1,
-//       highScores: gameData.highScores ?? { classic: 0, timeAttack: 0, challenge: 0 },
-//       totalGamesPlayed: gameData.totalGamesPlayed ?? 0,
-//     };
-
-//     await AsyncStorage.setItem(GAME_DATA_KEY, JSON.stringify(dataToSave));
-//   } catch (error) {
-//     console.error('Error saving game data:', error);
-//   }
-// };
 
 // Optimized game data loading with caching
 export const loadGameData = async (): Promise<Partial<GameState>> => {
@@ -114,6 +94,11 @@ export const loadGameData = async (): Promise<Partial<GameState>> => {
     const data = await AsyncStorage.getItem(GAME_DATA_KEY);
     const parsedData = data ? JSON.parse(data) : {};
 
+    // Ensure selectedDifficulty has a default value if not present
+    if (!parsedData.selectedDifficulty) {
+      parsedData.selectedDifficulty = 'medium';
+    }
+
     // Update cache
     gameDataCache = parsedData;
     cacheTimestamp = Date.now();
@@ -121,19 +106,9 @@ export const loadGameData = async (): Promise<Partial<GameState>> => {
     return parsedData;
   } catch (error) {
     console.error('Error loading game data:', error);
-    return {};
+    return { selectedDifficulty: 'medium' }; // Return default difficulty on error
   }
 };
-
-// export const loadGameData = async (): Promise<Partial<GameState>> => {
-//   try {
-//     const data = await AsyncStorage.getItem(GAME_DATA_KEY);
-//     return data ? JSON.parse(data) : {};
-//   } catch (error) {
-//     console.error('Error loading game data:', error);
-//     return {};
-//   }
-// };
 
 // Optimized score saving with batching
 export const saveScore = async (scoreRecord: ScoreRecord): Promise<void> => {
@@ -200,7 +175,7 @@ export const getHighScores = async (): Promise<Record<GameMode, number>> => {
   }
 };
 
-// Clear cache when clearing all data
+// Clear cache when clearing all data - resets difficulty to medium
 export const clearAllData = async (): Promise<void> => {
   try {
     gameDataCache = null;
@@ -211,6 +186,23 @@ export const clearAllData = async (): Promise<void> => {
       writeTimeout = null;
     }
     await AsyncStorage.multiRemove([HIGH_SCORE_KEY, GAME_DATA_KEY, SCORES_KEY, HIGH_SCORES_KEY]);
+    
+    // After clearing, save default data with medium difficulty
+    const defaultGameData = {
+      coins: 0,
+      currentTheme: 'default',
+      unlockedThemes: ['default'],
+      unlockedSkins: [],
+      dailyChallengeCompleted: false,
+      lastDailyChallengeDate: '',
+      challengeProgress: {},
+      currentUnlockedLevel: 1,
+      highScores: { classic: 0, timeAttack: 0, challenge: 0 },
+      totalGamesPlayed: 0,
+      selectedDifficulty: 'medium' as const, // Reset to default difficulty
+    };
+    
+    await saveGameData(defaultGameData);
   } catch (error) {
     console.error('Error clearing data:', error);
   }

@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { runOnJS } from 'react-native-reanimated';
 import { GameState, Block, GameMode, ChallengeLevel } from '../types/game';
-import { createInitialBlock, createNewBlock, calculateCollision, calculateScore } from '../utils/gameLogic';
+import { createInitialBlock, createNewBlock, calculateCollision, calculateScore, calculateChallengeStars, getCollisionFeedback } from '../utils/gameLogic';
 import { GAME_CONFIG, CHALLENGE_LEVELS } from '../constants/game';
 import { saveGameData } from '../utils/storage';
 import { useSound } from '../contexts/SoundContext';
@@ -11,7 +11,9 @@ export const useGameState = () => {
   const { playSound } = useSound();
   const soundPlayedRef = useRef<Set<string>>(new Set());
   const { themeState } = useTheme();
-  const difficulty = themeState.selectedDifficulty;
+  
+  // ✅ CRITICAL FIX: Use ref to always get the most current difficulty
+  const currentDifficultyRef = useRef(themeState.selectedDifficulty);
 
   const [gameState, setGameState] = useState<GameState>({
     blocks: [createInitialBlock()],
@@ -31,14 +33,34 @@ export const useGameState = () => {
     dailyChallengeCompleted: false,
     lastDailyChallengeDate: '',
     rewardsGranted: false,
+    selectedDifficulty: themeState.selectedDifficulty
   });
 
-  // Reset sound tracking when game starts
+  // ✅ CRITICAL: Keep ref synchronized with theme context difficulty
+  useEffect(() => {
+    currentDifficultyRef.current = themeState.selectedDifficulty;
+    setGameState(prev => ({
+      ...prev,
+      selectedDifficulty: themeState.selectedDifficulty
+    }));
+  }, [themeState.selectedDifficulty]);
+
+  // ✅ ENHANCED: Use ref for immediate access to current difficulty
   const startGame = useCallback((mode: GameMode = 'classic', level?: ChallengeLevel) => {
     soundPlayedRef.current.clear();
 
     const initialBlock = createInitialBlock();
-    const firstMovingBlock = createNewBlock(initialBlock, 1, mode, level, difficulty);
+    // ✅ FIX: Use ref to get the most current difficulty immediately
+    const currentDifficulty = currentDifficultyRef.current;
+    
+    const firstMovingBlock = createNewBlock(
+      initialBlock, 
+      1, 
+      mode, 
+      level, 
+      currentDifficulty, // Use ref value for immediate access
+      0
+    );
 
     setGameState(prev => ({
       ...prev,
@@ -54,32 +76,34 @@ export const useGameState = () => {
       level: level?.id,
       timeRemaining: mode === 'timeAttack' ? GAME_CONFIG.TIME_ATTACK_DURATION : level?.timeLimit,
       rewardsGranted: false,
+      selectedDifficulty: currentDifficulty, // Store current difficulty
     }));
 
-    // Save game state immediately when starting
     runOnJS(() => {
       saveGameData({
         mode,
         level: level?.id,
         gameStarted: true,
+        selectedDifficulty: currentDifficulty,
       });
     })();
-  }, []);
+  }, []); // Remove dependency on themeState.selectedDifficulty since we use ref
 
+  // ✅ ENHANCED: Use ref in all game logic functions
   const dropBlock = useCallback(() => {
     setGameState(prev => {
       if (!prev.currentBlock || prev.gameOver) return prev;
 
       const topBlock = prev.blocks[prev.blocks.length - 1];
-      const collision = calculateCollision(prev.currentBlock, topBlock);
+      // Use ref for immediate access to current difficulty
+      const currentDifficulty = currentDifficultyRef.current;
+      const collision = calculateCollision(prev.currentBlock, topBlock, currentDifficulty);
 
-      // Always play click sound when block is dropped
       runOnJS(() => {
         playSound('click', 0.6);
       })();
 
       if (collision.newWidth <= 0) {
-        // Game over - play failed sound
         runOnJS(() => {
           playSound('failed', 0.8);
         })();
@@ -88,7 +112,8 @@ export const useGameState = () => {
           ...prev,
           gameOver: true,
           currentBlock: null,
-          gameStarted: false
+          gameStarted: false,
+          selectedDifficulty: currentDifficulty
         };
       }
 
@@ -101,24 +126,36 @@ export const useGameState = () => {
 
       const newCombo = collision.isPerfect ? prev.combo + 1 : 0;
       const newPerfectBlocks = collision.isPerfect ? prev.perfectBlocks + 1 : prev.perfectBlocks;
-      const scoreIncrease = calculateScore(prev.tower_height, newCombo, collision.isPerfect, prev.mode);
+      
+      const scoreIncrease = calculateScore(
+        prev.tower_height, 
+        newCombo, 
+        collision.isPerfect, 
+        prev.mode, 
+        prev.currentBlock.speed, 
+        currentDifficulty
+      );
 
-      // Always play sound based on collision quality
       runOnJS(() => {
+        const feedback = getCollisionFeedback(
+          collision.collisionAccuracy, 
+          collision.isPerfect, 
+          prev.currentBlock?.speed || 0, 
+          currentDifficulty
+        );
+
         if (collision.isPerfect) {
-          playSound('chime', 0.7);
-        } else if (collision.collisionAccuracy > 0.7) {
-          playSound('drop', 0.5);
+          playSound('chime', Math.min(0.7 + (feedback.feedbackIntensity - 0.5) * 0.6, 1.0));
+        } else if (collision.collisionAccuracy > (currentDifficulty === 'hard' ? 0.8 : 0.7)) {
+          playSound('drop', Math.min(0.5 + feedback.feedbackIntensity * 0.3, 0.8));
         } else {
-          playSound('drop', 0.3);
+          playSound('drop', Math.max(0.2, feedback.feedbackIntensity * 0.4));
         }
       })();
 
-      // Check if challenge/time attack mode objectives are met
       const isComplete = checkModeCompletion(prev, newBlock);
 
       if (isComplete) {
-        // Challenge/time attack completed - play success sound
         runOnJS(() => {
           playSound('success', 0.8);
         })();
@@ -132,16 +169,19 @@ export const useGameState = () => {
           perfectBlocks: newPerfectBlocks,
           tower_height: prev.tower_height + 1,
           gameOver: true,
-          gameStarted: false
+          gameStarted: false,
+          selectedDifficulty: currentDifficulty
         };
       }
 
+      // Create next block with current difficulty
       const nextMovingBlock = createNewBlock(
         newBlock,
         prev.tower_height + 1,
         prev.mode,
         prev.level ? CHALLENGE_LEVELS.find(l => l.id === prev.level) : undefined,
-        difficulty
+        currentDifficulty,
+        newCombo
       );
 
       return {
@@ -152,6 +192,7 @@ export const useGameState = () => {
         combo: newCombo,
         perfectBlocks: newPerfectBlocks,
         tower_height: prev.tower_height + 1,
+        selectedDifficulty: currentDifficulty
       };
     });
   }, [playSound]);
@@ -166,7 +207,6 @@ export const useGameState = () => {
     return false;
   };
 
-  // Fixed timer update - removed playSound dependency and used refs
   const updateTimer = useCallback(() => {
     setGameState(prev => {
       if (prev.mode !== 'timeAttack' && !(prev.mode === 'challenge' && prev.timeRemaining !== undefined)) {
@@ -176,9 +216,9 @@ export const useGameState = () => {
       if (!prev.gameStarted || prev.gameOver) return prev;
 
       const newTime = Math.max(0, (prev.timeRemaining || 0) - 1);
+      const currentDifficulty = currentDifficultyRef.current;
 
       if (newTime <= 0) {
-        // Time up - play failed sound
         runOnJS(() => {
           playSound('failed', 0.8);
         })();
@@ -188,27 +228,35 @@ export const useGameState = () => {
           timeRemaining: 0,
           gameOver: true,
           currentBlock: null,
-          gameStarted: false
+          gameStarted: false,
+          selectedDifficulty: currentDifficulty
         };
       }
 
-      // Play warning sound when time is low
-      if (newTime === 10 || newTime === 5 || newTime === 3) {
+      const warningTimes = currentDifficulty === 'easy' 
+        ? [15, 10, 5, 3, 1] 
+        : currentDifficulty === 'hard' 
+        ? [8, 5, 3, 2, 1] 
+        : [10, 5, 3];
+
+      if (warningTimes.includes(newTime)) {
         runOnJS(() => {
-          playSound('click', 0.8);
+          const intensity = newTime <= 3 ? 0.9 : 0.6;
+          playSound('click', intensity);
         })();
       }
 
       return {
         ...prev,
         timeRemaining: newTime,
+        selectedDifficulty: currentDifficulty
       };
     });
-  }, []); // Remove playSound dependency - use runOnJS instead
+  }, [playSound]);
 
-  // Batch state updates for better performance
   const resetGame = useCallback(() => {
     soundPlayedRef.current.clear();
+    const currentDifficulty = currentDifficultyRef.current;
 
     setGameState(prev => ({
       ...prev,
@@ -223,25 +271,26 @@ export const useGameState = () => {
       timeRemaining: undefined,
       level: 1,
       rewardsGranted: false,
+      selectedDifficulty: currentDifficulty,
     }));
 
-    // Save reset state
     runOnJS(() => {
       saveGameData({
         gameStarted: false,
         gameOver: false,
         score: 0,
+        selectedDifficulty: currentDifficulty,
       });
     })();
   }, []);
 
-  // Optimized position updates with reduced state changes
   const updateCurrentBlockPosition = useCallback((newX: number, newDirection?: 'left' | 'right') => {
     setGameState(prev => {
       if (!prev.currentBlock) return prev;
 
-      // Only update if position actually changed significantly
-      const positionChanged = Math.abs(prev.currentBlock.x - newX) > 0.5;
+      const currentDifficulty = currentDifficultyRef.current;
+      const positionThreshold = currentDifficulty === 'easy' ? 0.8 : currentDifficulty === 'hard' ? 0.3 : 0.5;
+      const positionChanged = Math.abs(prev.currentBlock.x - newX) > positionThreshold;
       const directionChanged = newDirection && prev.currentBlock.direction !== newDirection;
 
       if (!positionChanged && !directionChanged) return prev;
@@ -253,15 +302,36 @@ export const useGameState = () => {
           x: newX,
           ...(newDirection && { direction: newDirection }),
         },
+        selectedDifficulty: currentDifficulty
       };
     });
   }, []);
 
   const addCoins = useCallback((amount: number) => {
-    setGameState(prev => ({
-      ...prev,
-      coins: prev.coins + amount,
-    }));
+    setGameState(prev => {
+      const currentDifficulty = currentDifficultyRef.current;
+      
+      let coinMultiplier = 1;
+      switch (currentDifficulty) {
+        case 'easy':
+          coinMultiplier = 0.8;
+          break;
+        case 'medium':
+          coinMultiplier = 1.0;
+          break;
+        case 'hard':
+          coinMultiplier = 1.3;
+          break;
+      }
+
+      const adjustedAmount = Math.floor(amount * coinMultiplier);
+      
+      return {
+        ...prev,
+        coins: prev.coins + adjustedAmount,
+        selectedDifficulty: currentDifficulty
+      };
+    });
   }, []);
 
   const spendCoins = useCallback((amount: number) => {
@@ -294,6 +364,93 @@ export const useGameState = () => {
     }));
   }, []);
 
+  const calculateChallengeCompletion = useCallback((
+    challengeLevel: ChallengeLevel,
+    gameState: GameState
+  ) => {
+    if (!gameState.gameOver || gameState.tower_height < challengeLevel.targetBlocks) {
+      return { completed: false, stars: 0 };
+    }
+
+    const currentDifficulty = currentDifficultyRef.current;
+    const averageSpeed = gameState.currentBlock?.speed || 0;
+    const stars = calculateChallengeStars(
+      challengeLevel,
+      gameState.score,
+      gameState.tower_height,
+      gameState.perfectBlocks,
+      true,
+      averageSpeed,
+      currentDifficulty
+    );
+
+    return { completed: true, stars };
+  }, []);
+
+  const updateHighScore = useCallback((newScore: number, mode: GameMode) => {
+    setGameState(prev => {
+      const currentDifficulty = currentDifficultyRef.current;
+      const highScoreKey = `${mode}_${currentDifficulty}`;
+      const currentHighScore = prev.highScore || 0;
+      
+      if (newScore > currentHighScore) {
+        runOnJS(() => {
+          saveGameData({
+            [`highScore_${highScoreKey}`]: newScore,
+            selectedDifficulty: currentDifficulty,
+          });
+        })();
+
+        return {
+          ...prev,
+          highScore: newScore,
+          selectedDifficulty: currentDifficulty
+        };
+      }
+      
+      return {
+        ...prev,
+        selectedDifficulty: currentDifficulty
+      };
+    });
+  }, []);
+
+  // ✅ NEW: Function to handle mid-game difficulty changes
+  const applyDifficultyChange = useCallback(() => {
+    setGameState(prev => {
+      const currentDifficulty = currentDifficultyRef.current;
+      
+      if (!prev.gameStarted || !prev.currentBlock) {
+        return {
+          ...prev,
+          selectedDifficulty: currentDifficulty
+        };
+      }
+
+      // If game is in progress, update the current moving block with new difficulty
+      const topBlock = prev.blocks[prev.blocks.length - 1];
+      const updatedCurrentBlock = createNewBlock(
+        topBlock,
+        prev.tower_height,
+        prev.mode,
+        prev.level ? CHALLENGE_LEVELS.find(l => l.id === prev.level) : undefined,
+        currentDifficulty,
+        prev.combo
+      );
+
+      return {
+        ...prev,
+        currentBlock: updatedCurrentBlock,
+        selectedDifficulty: currentDifficulty
+      };
+    });
+  }, []);
+
+  // ✅ Apply difficulty changes immediately when theme context changes
+  useEffect(() => {
+    applyDifficultyChange();
+  }, [themeState.selectedDifficulty, applyDifficultyChange]);
+
   return {
     gameState,
     startGame,
@@ -307,5 +464,9 @@ export const useGameState = () => {
     setCurrentTheme,
     completeDailyChallenge,
     setGameState,
+    calculateChallengeCompletion,
+    updateHighScore,
+    applyDifficultyChange,
+    currentDifficulty: currentDifficultyRef.current, // Always return current difficulty
   };
 };

@@ -108,6 +108,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             setIsResetting(true);
             try {
+              setSelectedDifficulty('medium');
               await clearAllData();
 
               // Reset theme state to initial values
