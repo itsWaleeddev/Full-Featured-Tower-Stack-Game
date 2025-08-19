@@ -25,7 +25,7 @@ export const GAME_CONFIG = {
   COMBO_MULTIPLIER: 12, // Increased to reward precision at speed
   BASE_SCORE: 120, // Increased base score
   
-  TIME_ATTACK_DURATION: 20, // seconds
+  TIME_ATTACK_DURATION: 10, // seconds
   DAILY_CHALLENGE_REWARD: 50,
   
   // Enhanced performance settings for smooth high-speed animation

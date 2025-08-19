@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag } from 'lucide-react-native';
+import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag, Store } from 'lucide-react-native';
 import { Theme } from '@/types/game';
 import { THEMES } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
@@ -98,7 +98,7 @@ export default function Shop() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <ShoppingBag size={24} color="#fff" />
+          <Store size={24} color="#fff" />
           <Text style={styles.title}>Premium Shop</Text>
         </View>
         <View style={styles.coinsContainer}>
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingTop: 60, // Account for status bar
+    paddingTop: 35, // Account for status bar
     paddingBottom: 15,
   },
   headerLeft: {

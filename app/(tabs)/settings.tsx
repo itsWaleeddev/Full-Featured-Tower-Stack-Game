@@ -1,23 +1,92 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Settings, Volume2, VolumeX, Trash2, Info, Star, Award, Palette } from 'lucide-react-native';
+import { Settings, Volume2, VolumeX, Trash2, Info, Target, Zap, Shield, HelpCircle } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
 import { useSoundManager } from '@/hooks/useSoundManager';
 import { Background } from '@/components/Background';
-import { THEME_UI_COLORS } from '@/constants/game';
 import { clearAllData } from '@/utils/storage';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Premium color scheme matching leaderboard
+const PREMIUM_COLORS = {
+  background: ['#0a0a0a', '#1a1a1a'] as const,
+  surfaceGradient: ['rgba(15, 23, 42, 0.8)', 'rgba(30, 41, 59, 0.4)'] as const,
+  cardGradient: ['rgba(30, 41, 59, 0.6)', 'rgba(15, 23, 42, 0.8)'] as const,
+  glowGradient: ['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)'] as const,
+  primary: '#3b82f6',
+  primaryLight: '#60a5fa',
+  primaryDark: '#1d4ed8',
+  accent: '#8b5cf6',
+  textPrimary: '#f8fafc',
+  textSecondary: '#cbd5e1',
+  textTertiary: '#64748b',
+  gold: '#fbbf24',
+  silver: '#e2e8f0',
+  bronze: '#f97316',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  border: 'rgba(148, 163, 184, 0.1)',
+  borderLight: 'rgba(148, 163, 184, 0.2)',
+  shadow: 'rgba(0, 0, 0, 0.3)',
+};
+
+type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+interface DifficultyOption {
+  id: DifficultyLevel;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  gradient: [string, string];
+}
 
 export default function SettingsScreen() {
   const { playSound, soundEnabled, toggleSound } = useSoundManager();
   const { themeState, updateThemeState } = useTheme();
   const [isResetting, setIsResetting] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('medium');
 
-  const themeColors = THEME_UI_COLORS[themeState.currentTheme as keyof typeof THEME_UI_COLORS] || THEME_UI_COLORS.default;
+  const difficultyOptions: DifficultyOption[] = [
+    {
+      id: 'easy',
+      name: 'Easy',
+      description: '25% slower block speed • 3 extra seconds per level',
+      icon: <Shield size={20} color={PREMIUM_COLORS.success} />,
+      color: PREMIUM_COLORS.success,
+      gradient: ['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)'],
+    },
+    {
+      id: 'medium',
+      name: 'Medium',
+      description: 'Default block speed • Standard time limits',
+      icon: <Target size={20} color={PREMIUM_COLORS.warning} />,
+      color: PREMIUM_COLORS.warning,
+      gradient: ['rgba(245, 158, 11, 0.15)', 'rgba(245, 158, 11, 0.05)'],
+    },
+    {
+      id: 'hard',
+      name: 'Hard',
+      description: '35% faster blocks • 2 seconds less per level',
+      icon: <Zap size={20} color={PREMIUM_COLORS.danger} />,
+      color: PREMIUM_COLORS.danger,
+      gradient: ['rgba(239, 68, 68, 0.15)', 'rgba(239, 68, 68, 0.05)'],
+    },
+  ];
 
   const handleSoundToggle = () => {
     playSound('button', 0.6);
     toggleSound();
+  };
+
+  const handleDifficultySelect = (difficulty: DifficultyLevel) => {
+    playSound('button', 0.6);
+    setSelectedDifficulty(difficulty);
+    // Here you would typically save this to storage or context
+    // updateThemeState({ ...themeState, difficulty });
   };
 
   const handleResetData = () => {
@@ -69,169 +138,228 @@ export default function SettingsScreen() {
     playSound('chime', 0.8);
   };
 
-  const completedLevels = Object.values(themeState.challengeProgress).filter(level => level.completed).length;
-  const totalStars = Object.values(themeState.challengeProgress).reduce((sum, level) => sum + level.stars, 0);
-
-  const settingsItems = [
-    {
-      id: 'sound',
-      title: 'Sound Effects',
-      description: 'Enable or disable game sound effects',
-      icon: soundEnabled ? <Volume2 size={24} color={themeColors.accent} /> : <VolumeX size={24} color="#666" />,
-      type: 'toggle' as const,
-      value: soundEnabled,
-      onToggle: handleSoundToggle,
-    },
-    {
-      id: 'test-sound',
-      title: 'Test Sound',
-      description: 'Play a test sound to check audio',
-      icon: <Volume2 size={24} color={themeColors.accent} />,
-      type: 'button' as const,
-      onPress: handleTestSound,
-      disabled: !soundEnabled,
-    },
-    {
-      id: 'reset',
-      title: 'Reset All Data',
-      description: 'Clear all progress, scores, and settings',
-      icon: <Trash2 size={24} color="#ff4757" />,
-      type: 'button' as const,
-      onPress: handleResetData,
-      destructive: true,
-    },
-  ];
-
   return (
-    <View style={styles.container}>
-      <Background towerHeight={1} themeId={themeState.currentTheme} />
+    <LinearGradient colors={PREMIUM_COLORS.background} style={styles.container}>
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <Settings size={28} color={themeColors.accent} />
-            <Text style={[styles.title, { color: themeColors.textPrimary }]}>
-              Settings
-            </Text>
+        <LinearGradient
+          colors={PREMIUM_COLORS.surfaceGradient}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <View style={styles.iconWrapper}>
+                <Settings size={32} color={PREMIUM_COLORS.primary} />
+                <View style={styles.iconGlow} />
+              </View>
+              <View>
+                <Text style={styles.title}>Settings</Text>
+                <Text style={styles.subtitle}>Customize your experience</Text>
+              </View>
+            </View>
           </View>
-        </View>
+        </LinearGradient>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Game Stats Summary */}
-        <View style={[styles.statsCard, { backgroundColor: themeColors.cardBackground }]}>
-          <Text style={[styles.statsTitle, { color: themeColors.textPrimary }]}>
-            Your Progress
-          </Text>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Game Settings Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Game Settings</Text>
           
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Star size={20} color="#FFD700" />
-              <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>
-                {totalStars}
-              </Text>
-              <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
-                Total Stars
-              </Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Award size={20} color={themeColors.accent} />
-              <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>
-                {completedLevels}
-              </Text>
-              <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
-                Levels Done
-              </Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Palette size={20} color={themeColors.accent} />
-              <Text style={[styles.statNumber, { color: themeColors.textPrimary }]}>
-                {themeState.unlockedThemes.length}
-              </Text>
-              <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>
-                Themes
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Settings List */}
-        <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>
-            Game Settings
-          </Text>
-          
-          {settingsItems.map((item) => (
-            <View key={item.id} style={[styles.settingItem, { backgroundColor: themeColors.cardBackground }]}>
-              <View style={styles.settingLeft}>
-                {item.icon}
-                <View style={styles.settingText}>
-                  <Text style={[
-                    styles.settingTitle, 
-                    { color: item.destructive ? '#ff4757' : themeColors.textPrimary }
-                  ]}>
-                    {item.title}
+          {/* Sound Settings */}
+          <View style={styles.settingCard}>
+            <LinearGradient
+              colors={PREMIUM_COLORS.cardGradient}
+              style={styles.settingCardGradient}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingIcon}>
+                  {soundEnabled ? (
+                    <Volume2 size={24} color={PREMIUM_COLORS.primary} />
+                  ) : (
+                    <VolumeX size={24} color={PREMIUM_COLORS.textTertiary} />
+                  )}
+                </View>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Sound Effects</Text>
+                  <Text style={styles.settingDescription}>
+                    Enable or disable game sound effects
                   </Text>
-                  <Text style={[styles.settingDescription, { color: themeColors.textSecondary }]}>
-                    {item.description}
+                </View>
+                <Switch
+                  value={soundEnabled}
+                  onValueChange={handleSoundToggle}
+                  trackColor={{ 
+                    false: 'rgba(100, 116, 139, 0.3)', 
+                    true: PREMIUM_COLORS.primary + '80' 
+                  }}
+                  thumbColor={soundEnabled ? PREMIUM_COLORS.primary : PREMIUM_COLORS.textTertiary}
+                  ios_backgroundColor="rgba(100, 116, 139, 0.3)"
+                />
+              </View>
+              
+              {soundEnabled && (
+                <View style={styles.settingActions}>
+                  <TouchableOpacity
+                    style={styles.testButton}
+                    onPress={handleTestSound}
+                  >
+                    <LinearGradient
+                      colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.1)']}
+                      style={styles.testButtonGradient}
+                    >
+                      <Volume2 size={16} color={PREMIUM_COLORS.primary} />
+                      <Text style={styles.testButtonText}>Test Sound</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </LinearGradient>
+          </View>
+
+          {/* Difficulty Setting */}
+          <View style={styles.settingCard}>
+            <LinearGradient
+              colors={PREMIUM_COLORS.cardGradient}
+              style={styles.settingCardGradient}
+            >
+              <View style={styles.settingHeader}>
+                <View style={styles.settingIcon}>
+                  <Target size={24} color={PREMIUM_COLORS.accent} />
+                </View>
+                <View style={styles.settingInfo}>
+                  <Text style={styles.settingTitle}>Difficulty Level</Text>
+                  <Text style={styles.settingDescription}>
+                    Choose your preferred game difficulty
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.settingRight}>
-                {item.type === 'toggle' && (
-                  <Switch
-                    value={item.value}
-                    onValueChange={item.onToggle}
-                    trackColor={{ false: '#666', true: themeColors.accent }}
-                    thumbColor={item.value ? '#fff' : '#f4f3f4'}
-                  />
-                )}
-                
-                {item.type === 'button' && (
+              <View style={styles.difficultyOptions}>
+                {difficultyOptions.map((option) => (
                   <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      item.destructive && styles.destructiveButton,
-                      item.disabled && styles.disabledButton,
-                    ]}
-                    onPress={item.onPress}
-                    disabled={item.disabled || isResetting}
+                    key={option.id}
+                    style={styles.difficultyOption}
+                    onPress={() => handleDifficultySelect(option.id)}
                   >
-                    <Text style={[
-                      styles.actionButtonText,
-                      item.destructive && styles.destructiveButtonText,
-                      item.disabled && styles.disabledButtonText,
-                    ]}>
-                      {item.id === 'reset' && isResetting ? 'Resetting...' : 
-                       item.id === 'test-sound' ? 'Test' : 'Action'}
-                    </Text>
+                    <LinearGradient
+                      colors={
+                        selectedDifficulty === option.id 
+                          ? option.gradient
+                          : ['rgba(30, 41, 59, 0.4)', 'rgba(15, 23, 42, 0.6)']
+                      }
+                      style={[
+                        styles.difficultyOptionGradient,
+                        selectedDifficulty === option.id && {
+                          borderColor: option.color,
+                          borderWidth: 1,
+                        }
+                      ]}
+                    >
+                      <View style={[
+                        styles.difficultyIcon,
+                        { backgroundColor: selectedDifficulty === option.id ? option.color + '20' : 'rgba(100, 116, 139, 0.2)' }
+                      ]}>
+                        {option.icon}
+                      </View>
+                      <View style={styles.difficultyInfo}>
+                        <Text style={[
+                          styles.difficultyName,
+                          { color: selectedDifficulty === option.id ? PREMIUM_COLORS.textPrimary : PREMIUM_COLORS.textSecondary }
+                        ]}>
+                          {option.name}
+                        </Text>
+                        <Text style={[
+                          styles.difficultyDesc,
+                          { color: selectedDifficulty === option.id ? PREMIUM_COLORS.textSecondary : PREMIUM_COLORS.textTertiary }
+                        ]}>
+                          {option.description}
+                        </Text>
+                      </View>
+                      {selectedDifficulty === option.id && (
+                        <View style={[styles.selectedIndicator, { backgroundColor: option.color }]} />
+                      )}
+                    </LinearGradient>
                   </TouchableOpacity>
-                )}
+                ))}
               </View>
-            </View>
-          ))}
-        </View>
-
-        {/* App Info */}
-        <View style={[styles.infoCard, { backgroundColor: themeColors.cardBackground }]}>
-          <Info size={20} color={themeColors.accent} />
-          <View style={styles.infoText}>
-            <Text style={[styles.infoTitle, { color: themeColors.textPrimary }]}>
-              Stack Tower
-            </Text>
-            <Text style={[styles.infoDescription, { color: themeColors.textSecondary }]}>
-              Version 1.0.0 • Built with React Native & Expo
-            </Text>
+            </LinearGradient>
           </View>
         </View>
 
-        <View style={styles.footer} />
+        {/* Data Management Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data Management</Text>
+          
+          <View style={styles.settingCard}>
+            <LinearGradient
+              colors={PREMIUM_COLORS.cardGradient}
+              style={styles.settingCardGradient}
+            >
+              <View style={styles.settingHeader}>
+                <View style={[styles.settingIcon, styles.dangerIcon]}>
+                  <Trash2 size={24} color={PREMIUM_COLORS.danger} />
+                </View>
+                <View style={styles.settingInfo}>
+                  <Text style={[styles.settingTitle, { color: PREMIUM_COLORS.danger }]}>
+                    Reset All Data
+                  </Text>
+                  <Text style={styles.settingDescription}>
+                    Clear all progress, scores, and settings permanently
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.settingActions}>
+                <TouchableOpacity
+                  style={styles.dangerButton}
+                  onPress={handleResetData}
+                  disabled={isResetting}
+                >
+                  <LinearGradient
+                    colors={['rgba(239, 68, 68, 0.15)', 'rgba(239, 68, 68, 0.1)']}
+                    style={styles.dangerButtonGradient}
+                  >
+                    <Trash2 size={16} color={PREMIUM_COLORS.danger} />
+                    <Text style={styles.dangerButtonText}>
+                      {isResetting ? 'Resetting...' : 'Reset Data'}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        </View>
+
+        {/* App Information */}
+        <View style={styles.appInfo}>
+          <LinearGradient
+            colors={PREMIUM_COLORS.cardGradient}
+            style={styles.appInfoGradient}
+          >
+            <View style={styles.appInfoHeader}>
+              <View style={styles.appIcon}>
+                <Info size={24} color={PREMIUM_COLORS.primary} />
+              </View>
+              <View style={styles.appDetails}>
+                <Text style={styles.appName}>Stack Tower</Text>
+                <Text style={styles.appVersion}>Version 1.0.0</Text>
+                <Text style={styles.appTech}>Built with React Native & Expo</Text>
+              </View>
+            </View>
+            
+
+          </LinearGradient>
+        </View>
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -240,141 +368,231 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingTop: 35,
+    paddingHorizontal: 24,
+    marginBottom: 10,
+  },
+  headerGradient: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.borderLight,
+    padding: 10
   },
   headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerLeft: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 40,
+  },
+  iconWrapper: {
+    position: 'relative',
+  },
+  iconGlow: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    right: -8,
+    bottom: -8,
+    borderRadius: 24,
+    backgroundColor: PREMIUM_COLORS.primary,
+    opacity: 0.2,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginLeft: 12,
+    fontSize: 28, //32
+    fontWeight: '700', //800
+    color: PREMIUM_COLORS.textPrimary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14, //16
+    color: PREMIUM_COLORS.textSecondary,
+    marginTop: 4,
   },
   scrollContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
-  statsCard: {
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 25,
+  scrollContent: {
+    paddingHorizontal: 24,
   },
-  statsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  settingsSection: {
-    marginBottom: 25,
+  section: {
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
-  settingItem: {
+  settingCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  settingCardGradient: {
+    padding: 20,
+  },
+  settingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
   },
-  settingLeft: {
-    flexDirection: 'row',
+  settingIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
+    marginRight: 16,
   },
-  settingText: {
-    marginLeft: 15,
+  dangerIcon: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  settingInfo: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 4,
   },
   settingDescription: {
+    fontSize: 14,
+    color: PREMIUM_COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  settingActions: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: PREMIUM_COLORS.border,
+  },
+  testButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
+  },
+  testButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  testButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.primary,
+  },
+  difficultyOptions: {
+    marginTop: 16,
+    gap: 12,
+  },
+  difficultyOption: {
+    borderRadius: 12,
+    //overflow: 'visible',
+  },
+  difficultyOptionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    position: 'relative',
+  },
+  difficultyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  difficultyInfo: {
+    flex: 1,
+  },
+  difficultyName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  difficultyDesc: {
     fontSize: 13,
     lineHeight: 18,
   },
-  settingRight: {
-    marginLeft: 15,
+  selectedIndicator: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -6 }],
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  actionButton: {
-    backgroundColor: 'rgba(79, 172, 254, 0.2)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(79, 172, 254, 0.3)',
+  dangerButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'flex-start',
   },
-  destructiveButton: {
-    backgroundColor: 'rgba(255, 71, 87, 0.2)',
-    borderColor: 'rgba(255, 71, 87, 0.3)',
-  },
-  disabledButton: {
-    backgroundColor: 'rgba(100, 100, 100, 0.2)',
-    borderColor: 'rgba(100, 100, 100, 0.3)',
-  },
-  actionButtonText: {
-    color: '#4facfe',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  destructiveButtonText: {
-    color: '#ff4757',
-  },
-  disabledButtonText: {
-    color: '#666',
-  },
-  infoCard: {
+  dangerButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
   },
-  infoText: {
-    marginLeft: 15,
+  dangerButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.danger,
+  },
+  appInfo: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  appInfoGradient: {
+    padding: 20,
+  },
+  appInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  appIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  appDetails: {
     flex: 1,
   },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  appName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  appVersion: {
+    fontSize: 14,
+    color: PREMIUM_COLORS.textSecondary,
     marginBottom: 2,
   },
-  infoDescription: {
-    fontSize: 13,
+  appTech: {
+    fontSize: 12,
+    color: PREMIUM_COLORS.textTertiary,
   },
-  footer: {
+
+  bottomSpacer: {
     height: 40,
   },
 });

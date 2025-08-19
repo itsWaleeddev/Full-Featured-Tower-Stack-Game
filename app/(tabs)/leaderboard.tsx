@@ -1,15 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award } from 'lucide-react-native';
+import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award, Zap, GamepadIcon } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
 import { useSoundManager } from '@/hooks/useSoundManager';
-import { Background } from '@/components/Background';
-import { THEME_UI_COLORS } from '@/constants/game';
 import { GameMode, ScoreRecord } from '@/types/game';
 import { getTopScores } from '@/utils/storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Premium color scheme with enhanced gradients
+const PREMIUM_COLORS = {
+  background: ['#0a0a0a', '#1a1a1a'] as const,
+  surfaceGradient: ['rgba(15, 23, 42, 0.8)', 'rgba(30, 41, 59, 0.4)'] as const,
+  cardGradient: ['rgba(30, 41, 59, 0.6)', 'rgba(15, 23, 42, 0.8)'] as const,
+  glowGradient: ['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)'] as const,
+  primary: '#3b82f6',
+  primaryLight: '#60a5fa',
+  primaryDark: '#1d4ed8',
+  accent: '#8b5cf6',
+  textPrimary: '#f8fafc',
+  textSecondary: '#cbd5e1',
+  textTertiary: '#64748b',
+  gold: '#fbbf24',
+  silver: '#e2e8f0',
+  bronze: '#f97316',
+  success: '#10b981',
+  border: 'rgba(148, 163, 184, 0.1)',
+  borderLight: 'rgba(148, 163, 184, 0.2)',
+  shadow: 'rgba(0, 0, 0, 0.3)',
+};
 
 const getModeIcon = (mode: GameMode, size: number = 20, color: string = '#fff') => {
   switch (mode) {
@@ -27,11 +47,11 @@ const getModeIcon = (mode: GameMode, size: number = 20, color: string = '#fff') 
 const getModeDisplayName = (mode: GameMode): string => {
   switch (mode) {
     case 'classic':
-      return 'Classic Mode';
+      return 'Classic';
     case 'timeAttack':
       return 'Time Attack';
     case 'challenge':
-      return 'Challenge Mode';
+      return 'Challenge';
     default:
       return 'Unknown';
   }
@@ -40,13 +60,26 @@ const getModeDisplayName = (mode: GameMode): string => {
 const getRankIcon = (rank: number, size: number = 24) => {
   switch (rank) {
     case 1:
-      return <Crown size={size} color="#FFD700" />;
+      return <Crown size={size} color={PREMIUM_COLORS.gold} />;
     case 2:
-      return <Medal size={size} color="#C0C0C0" />;
+      return <Medal size={size} color={PREMIUM_COLORS.silver} />;
     case 3:
-      return <Medal size={size} color="#CD7F32" />;
+      return <Medal size={size} color={PREMIUM_COLORS.bronze} />;
     default:
-      return <Trophy size={size} color="#666" />;
+      return <Trophy size={size} color={PREMIUM_COLORS.textTertiary} />;
+  }
+};
+
+const getRankGradient = (rank: number): [string, string] => {
+  switch (rank) {
+    case 1:
+      return ['rgba(251, 191, 36, 0.15)', 'rgba(251, 191, 36, 0.05)'];
+    case 2:
+      return ['rgba(226, 232, 240, 0.15)', 'rgba(226, 232, 240, 0.05)'];
+    case 3:
+      return ['rgba(249, 115, 22, 0.15)', 'rgba(249, 115, 22, 0.05)'];
+    default:
+      return ['rgba(100, 116, 139, 0.1)', 'rgba(100, 116, 139, 0.05)'];
   }
 };
 
@@ -55,8 +88,6 @@ export default function LeaderboardScreen() {
   const { themeState } = useTheme();
   const [selectedMode, setSelectedMode] = useState<GameMode | 'all'>('all');
   const [recentScores, setRecentScores] = useState<ScoreRecord[]>([]);
-
-  const themeColors = THEME_UI_COLORS[themeState.currentTheme as keyof typeof THEME_UI_COLORS] || THEME_UI_COLORS.default;
 
   useEffect(() => {
     loadRecentScores();
@@ -76,11 +107,11 @@ export default function LeaderboardScreen() {
     setSelectedMode(mode);
   };
 
-  const modes: Array<{ id: GameMode | 'all'; name: string; icon: React.ReactNode }> = [
-    { id: 'all', name: 'All', icon: <Trophy size={16} color="#fff" /> },
-    { id: 'classic', name: 'Classic', icon: getModeIcon('classic', 16) },
-    { id: 'timeAttack', name: 'Time Attack', icon: getModeIcon('timeAttack', 16) },
-    { id: 'challenge', name: 'Challenge', icon: getModeIcon('challenge', 16) },
+  const modes: Array<{ id: GameMode | 'all'; name: string; icon: React.ReactNode; color: string }> = [
+    { id: 'all', name: 'All Modes', icon: <Trophy size={18} color="#fff" />, color: PREMIUM_COLORS.primary },
+    { id: 'classic', name: 'Classic', icon: getModeIcon('classic', 18), color: PREMIUM_COLORS.success },
+    { id: 'timeAttack', name: 'Time Attack', icon: getModeIcon('timeAttack', 18), color: PREMIUM_COLORS.accent },
+    { id: 'challenge', name: 'Challenge', icon: getModeIcon('challenge', 18), color: PREMIUM_COLORS.bronze },
   ];
 
   const completedLevels = Object.values(themeState.challengeProgress).filter(level => level.completed).length;
@@ -97,166 +128,266 @@ export default function LeaderboardScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Background towerHeight={1} themeId={themeState.currentTheme} />
+    <LinearGradient colors={PREMIUM_COLORS.background} style={styles.container}>
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <Trophy size={28} color={themeColors.accent} />
-            <Text style={[styles.title, { color: themeColors.textPrimary }]}>
-              Leaderboard
-            </Text>
+        <LinearGradient
+          colors={PREMIUM_COLORS.surfaceGradient}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.titleContainer}>
+              <View style={styles.iconWrapper}>
+                <Trophy size={32} color={PREMIUM_COLORS.primary} />
+                <View style={styles.iconGlow} />
+              </View>
+              <View>
+                <Text style={styles.title}>Leaderboard</Text>
+                <Text style={styles.subtitle}>Your gaming achievements</Text>
+              </View>
+            </View>
           </View>
-        </View>
+        </LinearGradient>
       </View>
 
-      {/* Stats Overview */}
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: themeColors.cardBackground }]}>
-          <View style={styles.statHeader}>
-            <Infinity size={20} color={themeColors.accent} />
-            <Text style={[styles.statTitle, { color: themeColors.textPrimary }]}>Classic</Text>
-          </View>
-          <Text style={[styles.statValue, { color: themeColors.accent }]}>
-            {themeState.highScores.classic.toLocaleString()}
-          </Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>High Score</Text>
-        </View>
-
-        <View style={[styles.statCard, { backgroundColor: themeColors.cardBackground }]}>
-          <View style={styles.statHeader}>
-            <Clock size={20} color={themeColors.accent} />
-            <Text style={[styles.statTitle, { color: themeColors.textPrimary }]}>Time Attack</Text>
-          </View>
-          <Text style={[styles.statValue, { color: themeColors.accent }]}>
-            {themeState.highScores.timeAttack.toLocaleString()}
-          </Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>High Score</Text>
-        </View>
-
-        <View style={[styles.statCard, { backgroundColor: themeColors.cardBackground }]}>
-          <View style={styles.statHeader}>
-            <Target size={20} color={themeColors.accent} />
-            <Text style={[styles.statTitle, { color: themeColors.textPrimary }]}>Challenge</Text>
-          </View>
-          <Text style={[styles.statValue, { color: themeColors.accent }]}>
-            {completedLevels}/20
-          </Text>
-          <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Completed</Text>
-        </View>
-      </View>
-
-      {/* Additional Stats */}
-      <View style={styles.additionalStats}>
-        <View style={[styles.additionalStatCard, { backgroundColor: themeColors.cardBackground }]}>
-          <Star size={18} color="#FFD700" />
-          <Text style={[styles.additionalStatText, { color: themeColors.textPrimary }]}>
-            {totalStars} Stars
-          </Text>
-        </View>
-
-        <View style={[styles.additionalStatCard, { backgroundColor: themeColors.cardBackground }]}>
-          <TrendingUp size={18} color={themeColors.accent} />
-          <Text style={[styles.additionalStatText, { color: themeColors.textPrimary }]}>
-            {themeState.totalGamesPlayed} Games
-          </Text>
-        </View>
-
-        <View style={[styles.additionalStatCard, { backgroundColor: themeColors.cardBackground }]}>
-          <Award size={18} color={themeColors.accent} />
-          <Text style={[styles.additionalStatText, { color: themeColors.textPrimary }]}>
-            {themeState.highScores.challenge.toLocaleString()} Best
-          </Text>
-        </View>
-      </View>
-
-      {/* Mode Filter */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.modeFilter}
-        contentContainerStyle={styles.modeFilterContent}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {modes.map((mode) => (
-          <TouchableOpacity
-            key={mode.id}
-            style={[
-              styles.modeButton,
-              selectedMode === mode.id && [styles.selectedModeButton, { backgroundColor: themeColors.accent }],
-            ]}
-            onPress={() => handleModeSelect(mode.id)}
-          >
-            {mode.icon}
-            <Text style={[
-              styles.modeButtonText,
-              selectedMode === mode.id && styles.selectedModeButtonText,
-              { color: selectedMode === mode.id ? '#fff' : themeColors.textSecondary }
-            ]}>
-              {mode.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        {/* Hero Stats */}
+        <View style={styles.heroStats}>
+          <View style={styles.primaryStatCard}>
+            <LinearGradient
+              colors={['rgba(59, 130, 246, 0.2)', 'rgba(59, 130, 246, 0.05)']}
+              style={styles.primaryStatGradient}
+            >
+              <View style={styles.primaryStatContent}>
+                <View style={styles.primaryStatIcon}>
+                  <Zap size={28} color={PREMIUM_COLORS.primary} />
+                </View>
+                <Text style={styles.primaryStatValue}>
+                  {Math.max(
+                    themeState.highScores.classic,
+                    themeState.highScores.timeAttack,
+                    themeState.highScores.challenge
+                  ).toLocaleString()}
+                </Text>
+                <Text style={styles.primaryStatLabel}>Personal Best</Text>
+              </View>
+            </LinearGradient>
+          </View>
 
-      {/* Recent Scores */}
-      <View style={styles.scoresSection}>
-        <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>
-          Recent Scores
-        </Text>
-        
-        <ScrollView style={styles.scoresList} showsVerticalScrollIndicator={false}>
+          <View style={styles.secondaryStats}>
+            <View style={styles.secondaryStatCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.secondaryStatGradient}
+              >
+                <GamepadIcon size={20} color={PREMIUM_COLORS.success} />
+                <Text style={styles.secondaryStatValue}>{themeState.totalGamesPlayed}</Text>
+                <Text style={styles.secondaryStatLabel}>Games</Text>
+              </LinearGradient>
+            </View>
+
+            <View style={styles.secondaryStatCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.secondaryStatGradient}
+              >
+                <Star size={20} color={PREMIUM_COLORS.gold} />
+                <Text style={styles.secondaryStatValue}>{totalStars}</Text>
+                <Text style={styles.secondaryStatLabel}>Stars</Text>
+              </LinearGradient>
+            </View>
+          </View>
+        </View>
+
+        {/* Game Mode Stats */}
+        <View style={styles.gameModeStats}>
+          <Text style={styles.sectionTitle}>Game Modes</Text>
+          
+          <View style={styles.modeStatsGrid}>
+            <View style={styles.modeStatCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.modeStatGradient}
+              >
+                <View style={styles.modeStatHeader}>
+                  <View style={[styles.modeStatIcon, { backgroundColor: PREMIUM_COLORS.success }]}>
+                    <Infinity size={22} color="#ffffff" />
+                  </View>
+                  <Text style={styles.modeStatTitle}>Classic Mode</Text>
+                </View>
+                <Text style={styles.modeStatValue}>
+                  {themeState.highScores.classic.toLocaleString()}
+                </Text>
+                <Text style={styles.modeStatLabel}>Best Score</Text>
+              </LinearGradient>
+            </View>
+
+            <View style={styles.modeStatCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.modeStatGradient}
+              >
+                <View style={styles.modeStatHeader}>
+                  <View style={[styles.modeStatIcon, { backgroundColor: PREMIUM_COLORS.accent }]}>
+                    <Clock size={22} color="#ffffff" />
+                  </View>
+                  <Text style={styles.modeStatTitle}>Time Attack</Text>
+                </View>
+                <Text style={styles.modeStatValue}>
+                  {themeState.highScores.timeAttack.toLocaleString()}
+                </Text>
+                <Text style={styles.modeStatLabel}>Best Score</Text>
+              </LinearGradient>
+            </View>
+
+            <View style={styles.modeStatCard}>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.modeStatGradient}
+              >
+                <View style={styles.modeStatHeader}>
+                  <View style={[styles.modeStatIcon, { backgroundColor: PREMIUM_COLORS.bronze }]}>
+                    <Target size={22} color="#ffffff" />
+                  </View>
+                  <Text style={styles.modeStatTitle}>Challenge</Text>
+                </View>
+                <Text style={styles.modeStatValue}>{completedLevels}/20</Text>
+                <Text style={styles.modeStatLabel}>Completed</Text>
+              </LinearGradient>
+            </View>
+          </View>
+        </View>
+
+        {/* Mode Filter */}
+        <View style={styles.filterSection}>
+          <Text style={styles.sectionTitle}>Recent Scores</Text>
+          
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.modeFilter}
+            contentContainerStyle={styles.modeFilterContent}
+          >
+            {modes.map((mode) => (
+              <TouchableOpacity
+                key={mode.id}
+                style={styles.modeButton}
+                onPress={() => handleModeSelect(mode.id)}
+              >
+                <LinearGradient
+                  colors={
+                    selectedMode === mode.id 
+                      ? [mode.color, mode.color + '80']
+                      : ['rgba(30, 41, 59, 0.8)', 'rgba(15, 23, 42, 0.6)']
+                  }
+                  style={styles.modeButtonGradient}
+                >
+                  <View style={[
+                    styles.modeButtonIcon,
+                    selectedMode === mode.id && { backgroundColor: 'rgba(255, 255, 255, 0.2)' }
+                  ]}>
+                    {mode.icon}
+                  </View>
+                  <Text style={[
+                    styles.modeButtonText,
+                    { color: selectedMode === mode.id ? '#ffffff' : PREMIUM_COLORS.textSecondary }
+                  ]}>
+                    {mode.name}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Scores List */}
+        <View style={styles.scoresContainer}>
           {recentScores.length === 0 ? (
             <View style={styles.emptyState}>
-              <Trophy size={48} color={themeColors.textTertiary} />
-              <Text style={[styles.emptyStateText, { color: themeColors.textSecondary }]}>
-                No scores yet
-              </Text>
-              <Text style={[styles.emptyStateSubtext, { color: themeColors.textTertiary }]}>
-                Start playing to see your scores here!
-              </Text>
+              <LinearGradient
+                colors={PREMIUM_COLORS.cardGradient}
+                style={styles.emptyStateGradient}
+              >
+                <View style={styles.emptyStateIcon}>
+                  <Trophy size={56} color={PREMIUM_COLORS.textTertiary} />
+                </View>
+                <Text style={styles.emptyStateTitle}>No scores yet</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Start playing to build your leaderboard!
+                </Text>
+              </LinearGradient>
             </View>
           ) : (
             recentScores.map((score, index) => (
-              <View key={`${score.date}-${index}`} style={[styles.scoreCard, { backgroundColor: themeColors.cardBackground }]}>
-                <View style={styles.scoreRank}>
-                  {getRankIcon(index + 1, 20)}
-                  <Text style={[styles.rankText, { color: themeColors.textSecondary }]}>
-                    #{index + 1}
-                  </Text>
-                </View>
-
-                <View style={styles.scoreInfo}>
-                  <View style={styles.scoreHeader}>
-                    <Text style={[styles.scoreValue, { color: themeColors.textPrimary }]}>
-                      {score.score.toLocaleString()}
-                    </Text>
-                    <View style={styles.modeTag}>
-                      {getModeIcon(score.mode, 14, themeColors.accent)}
-                      <Text style={[styles.modeTagText, { color: themeColors.accent }]}>
-                        {getModeDisplayName(score.mode)}
+              <View key={`${score.date}-${index}`} style={styles.scoreCard}>
+                <LinearGradient
+                  colors={getRankGradient(index + 1)}
+                  style={styles.scoreCardGlow}
+                >
+                  <LinearGradient
+                    colors={PREMIUM_COLORS.cardGradient}
+                    style={styles.scoreCardGradient}
+                  >
+                    {/* Rank Section */}
+                    <View style={styles.scoreRank}>
+                      <View style={styles.rankIconContainer}>
+                        {getRankIcon(index + 1, 28)}
+                      </View>
+                      <Text style={[
+                        styles.rankNumber,
+                        { 
+                          color: index < 3 
+                            ? [PREMIUM_COLORS.gold, PREMIUM_COLORS.silver, PREMIUM_COLORS.bronze][index]
+                            : PREMIUM_COLORS.textSecondary
+                        }
+                      ]}>
+                        #{index + 1}
                       </Text>
                     </View>
-                  </View>
-                  
-                  <View style={styles.scoreDetails}>
-                    <Text style={[styles.scoreBlocks, { color: themeColors.textSecondary }]}>
-                      {score.blocks} blocks
-                    </Text>
-                    <Text style={[styles.scoreDate, { color: themeColors.textTertiary }]}>
-                      {formatDate(score.date)}
-                    </Text>
-                  </View>
-                </View>
+
+                    {/* Score Info */}
+                    <View style={styles.scoreInfo}>
+                      <View style={styles.scoreHeader}>
+                        <Text style={styles.scoreValue}>
+                          {score.score.toLocaleString()}
+                        </Text>
+                        <View style={styles.modeChip}>
+                          <LinearGradient
+                            colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.1)']}
+                            style={styles.modeChipGradient}
+                          >
+                            {getModeIcon(score.mode, 16, PREMIUM_COLORS.primary)}
+                            <Text style={styles.modeChipText}>
+                              {getModeDisplayName(score.mode)}
+                            </Text>
+                          </LinearGradient>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.scoreFooter}>
+                        <View style={styles.scoreDetail}>
+                          <Text style={styles.scoreBlocks}>{score.blocks} blocks</Text>
+                        </View>
+                        <Text style={styles.scoreDate}>
+                          {formatDate(score.date)}
+                        </Text>
+                      </View>
+                    </View>
+                  </LinearGradient>
+                </LinearGradient>
               </View>
             ))
           )}
-          
-          <View style={styles.footer} />
-        </ScrollView>
-      </View>
-    </View>
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
@@ -264,145 +395,267 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingTop: 35,
+    paddingHorizontal: 24,
+    marginBottom: 10,
+  },
+  headerGradient: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.borderLight,
+    padding: 10
   },
   headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerLeft: {
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 40,
+  },
+  iconWrapper: {
+    position: 'relative',
+  },
+  iconGlow: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    right: -8,
+    bottom: -8,
+    borderRadius: 24,
+    backgroundColor: PREMIUM_COLORS.primary,
+    opacity: 0.2,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginLeft: 12,
+    fontWeight: '700',
+    color: PREMIUM_COLORS.textPrimary,
+    letterSpacing: -0.5,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 10,
+  subtitle: {
+    fontSize: 14,
+    color: PREMIUM_COLORS.textSecondary,
+    marginTop: 4,
   },
-  statCard: {
+  scrollContainer: {
     flex: 1,
-    padding: 15,
-    borderRadius: 12,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+  },
+  heroStats: {
+    marginBottom: 14,
+  },
+  primaryStatCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.borderLight,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  primaryStatGradient: {
+    padding: 20,
     alignItems: 'center',
   },
-  statHeader: {
-    flexDirection: 'row',
+  primaryStatContent: {
     alignItems: 'center',
+  },
+  primaryStatIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  primaryStatValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: PREMIUM_COLORS.textPrimary,
     marginBottom: 8,
+    letterSpacing: -1,
   },
-  statTitle: {
-    fontSize: 12,
+  primaryStatLabel: {
+    fontSize: 16,
+    color: PREMIUM_COLORS.textSecondary,
     fontWeight: '600',
-    marginLeft: 6,
   },
-  statValue: {
-    fontSize: 18,
+  secondaryStats: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  secondaryStatCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+  },
+  secondaryStatGradient: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  secondaryStatValue: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+    marginTop: 8,
     marginBottom: 4,
   },
-  statLabel: {
-    fontSize: 11,
-  },
-  additionalStats: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 10,
-  },
-  additionalStatCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 10,
-    gap: 8,
-  },
-  additionalStatText: {
-    fontSize: 14,
+  secondaryStatLabel: {
+    fontSize: 12,
+    color: PREMIUM_COLORS.textTertiary,
     fontWeight: '600',
   },
-  modeFilter: {
-    maxHeight: 50,
-    marginBottom: 20,
+  gameModeStats: {
+    marginBottom: 14,
   },
-  modeFilterContent: {
-    paddingHorizontal: 20,
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
-  modeButton: {
+  modeStatsGrid: {
+    gap: 12,
+  },
+  modeStatCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  modeStatGradient: {
+    padding: 20,
+  },
+  modeStatHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    gap: 6,
+    marginBottom: 16,
   },
-  selectedModeButton: {
-    backgroundColor: '#4facfe',
+  modeStatIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modeStatTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textPrimary,
+  },
+  modeStatValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: PREMIUM_COLORS.textPrimary,
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  modeStatLabel: {
+    fontSize: 14,
+    color: PREMIUM_COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  modeFilter: {
+    maxHeight: 60,
+  },
+  modeFilterContent: {
+    paddingRight: 24,
+  },
+  modeButton: {
+    borderRadius: 16,
+    marginRight: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+  },
+  modeButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  modeButtonIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow:"hidden"
   },
   modeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-  },
-  selectedModeButtonText: {
-    color: '#fff',
-  },
-  scoresSection: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 15,
   },
-  scoresList: {
-    flex: 1,
+  scoresContainer: {
+    gap: 12,
   },
   emptyState: {
-    flex: 1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: PREMIUM_COLORS.border,
+    overflow: 'hidden',
+  },
+  emptyStateGradient: {
+    padding: 48,
+    alignItems: 'center',
+  },
+  emptyStateIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(100, 116, 139, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    marginBottom: 24,
   },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 15,
-    marginBottom: 5,
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.textSecondary,
+    marginBottom: 8,
   },
-  emptyStateSubtext: {
-    fontSize: 14,
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: PREMIUM_COLORS.textTertiary,
     textAlign: 'center',
+    lineHeight: 24,
   },
   scoreCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  scoreCardGlow: {
+    padding: 1,
+  },
+  scoreCardGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+    padding: 20,
+    borderRadius: 15,
   },
   scoreRank: {
     alignItems: 'center',
-    marginRight: 15,
-    minWidth: 40,
+    marginRight: 20,
+    minWidth: 60,
   },
-  rankText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
+  rankIconContainer: {
+    marginBottom: 8,
+  },
+  rankNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   scoreInfo: {
     flex: 1,
@@ -411,38 +664,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 12,
   },
   scoreValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
+    color: PREMIUM_COLORS.textPrimary,
+    letterSpacing: -0.5,
   },
-  modeTag: {
+  modeChip: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  modeChipGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
   },
-  modeTagText: {
-    fontSize: 11,
-    fontWeight: '600',
+  modeChipText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.primary,
   },
-  scoreDetails: {
+  scoreFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  scoreDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   scoreBlocks: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: PREMIUM_COLORS.textSecondary,
   },
   scoreDate: {
     fontSize: 12,
+    color: PREMIUM_COLORS.textTertiary,
+    fontWeight: '500',
   },
-  footer: {
-    height: 20,
+  bottomSpacer: {
+    height: 40,
   },
 });
