@@ -24,7 +24,7 @@ const LEVEL_SPEED_BOOST = 0.15; // Additional speed boost per level for exponent
 // Pre-calculated positioning values
 const HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
 const INITIAL_BLOCK_X = (SCREEN_WIDTH - INITIAL_BLOCK_WIDTH) / 2;
-const INITIAL_BLOCK_Y = SCREEN_HEIGHT - 200;
+const INITIAL_BLOCK_Y = SCREEN_HEIGHT - 160; //200
 const COLOR_COUNT = COLORS.blocks.length;
 
 // Object pooling for frequently created objects

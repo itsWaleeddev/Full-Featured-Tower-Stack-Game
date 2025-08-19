@@ -269,12 +269,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   shopPrompt: {
-    marginTop: 20,
+    marginTop: 10,
     padding: 15,
     backgroundColor: 'rgba(79, 172, 254, 0.1)',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(79, 172, 254, 0.3)',
+    marginBottom:20
   },
   shopPromptText: {
     color: '#4facfe',

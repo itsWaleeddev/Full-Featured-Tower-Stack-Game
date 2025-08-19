@@ -45,14 +45,14 @@ const ModeIcon = ({ mode, size = 32, color = '#fff' }: { mode: GameMode; size?: 
 };
 
 // Animated Block Component for Home Screen
-const AnimatedBlock = ({ 
-  width, 
-  height = 32, 
-  x, 
-  y, 
-  colors, 
-  delay = 0, 
-  themeId = 'default' 
+const AnimatedBlock = ({
+  width,
+  height = 32,
+  x,
+  y,
+  colors,
+  delay = 0,
+  themeId = 'default'
 }: {
   width: number;
   height?: number;
@@ -86,7 +86,7 @@ const AnimatedBlock = ({
   const animatedStyle = useAnimatedStyle(() => {
     const scale = scaleValue.value;
     const glow = glowValue.value;
-    
+
     return {
       transform: [
         { translateX: x },
@@ -116,9 +116,9 @@ const AnimatedBlock = ({
         {
           width,
           height,
-          shadowColor: themeId === 'neon' ? '#00ffff' : 
-                      themeId === 'volcanic' ? '#ff4500' : 
-                      themeId === 'golden' ? '#ffd700' : '#000',
+          shadowColor: themeId === 'neon' ? '#00ffff' :
+            themeId === 'volcanic' ? '#ff4500' :
+              themeId === 'golden' ? '#ffd700' : '#000',
         },
         animatedStyle,
       ]}
@@ -155,7 +155,7 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
   // Android optimization: Significantly reduce particles
   const particleCount = IS_ANDROID ? 6 : 12;
   const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => i), []);
-  
+
   return (
     <View style={styles.particlesContainer}>
       {particles.map((particle) => {
@@ -164,29 +164,29 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
           const translateX = useSharedValue(0);
           const opacity = useSharedValue(0);
           const scale = useSharedValue(0.5);
-          
+
           useEffect(() => {
             const startAnimation = () => {
               translateY.value = SCREEN_HEIGHT + 50;
               translateX.value = 0;
               opacity.value = 0;
               scale.value = 0.5;
-              
+
               // Android optimization: Slower, less frequent animations
               const baseDuration = IS_ANDROID ? 10000 : 8000;
               const randomDuration = IS_ANDROID ? 2000 : 4000;
               const delayRange = IS_ANDROID ? 6000 : 4000;
-              
+
               translateY.value = withDelay(
                 Math.random() * delayRange,
                 withTiming(-100, { duration: baseDuration + Math.random() * randomDuration })
               );
-              
+
               translateX.value = withDelay(
                 Math.random() * delayRange,
                 withTiming((Math.random() - 0.5) * 100, { duration: baseDuration + Math.random() * randomDuration })
               );
-              
+
               opacity.value = withDelay(
                 Math.random() * delayRange,
                 withSequence(
@@ -200,10 +200,10 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
                 Math.random() * delayRange,
                 withTiming(1 + Math.random() * 0.3, { duration: 1500 })
               );
-              
+
               setTimeout(startAnimation, baseDuration + Math.random() * randomDuration);
             };
-            
+
             startAnimation();
           }, []);
 
@@ -242,7 +242,7 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
             />
           );
         };
-        
+
         return <ParticleComponent key={particle} />;
       })}
     </View>
@@ -253,20 +253,20 @@ const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) =
 const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   const [primaryColor, secondaryColor] = theme.backgroundColors;
-  
+
   return {
     primary: primaryColor,
     secondary: secondaryColor,
-    cardOverlay: themeId === 'diamond' || themeId === 'arctic' 
-      ? 'rgba(0, 0, 0, 0.15)' 
+    cardOverlay: themeId === 'diamond' || themeId === 'arctic'
+      ? 'rgba(0, 0, 0, 0.15)'
       : 'rgba(255, 255, 255, 0.15)',
     textPrimary: themeId === 'diamond' || themeId === 'arctic' ? '#333' : '#fff',
     textSecondary: themeId === 'diamond' || themeId === 'arctic' ? '#666' : '#ccc',
     accent: theme.blockColors[0][0],
-    glowColor: themeId === 'neon' ? '#00ffff' : 
-               themeId === 'volcanic' ? '#ff4500' : 
-               themeId === 'galaxy' ? '#9370db' : 
-               themeId === 'golden' ? '#ffd700' : theme.blockColors[0][0],
+    glowColor: themeId === 'neon' ? '#00ffff' :
+      themeId === 'volcanic' ? '#ff4500' :
+        themeId === 'galaxy' ? '#9370db' :
+          themeId === 'golden' ? '#ffd700' : theme.blockColors[0][0],
   };
 }, []);
 
@@ -292,16 +292,16 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
       // Android optimization: Faster, simpler animations
       const titleDelay = IS_ANDROID ? 200 : 300;
       const stackDelay = IS_ANDROID ? 400 : 600;
-      const springConfig = IS_ANDROID 
+      const springConfig = IS_ANDROID
         ? { damping: 12, stiffness: 80 }
         : { damping: 8, stiffness: 100 };
       const stackSpringConfig = IS_ANDROID
         ? { damping: 15, stiffness: 60 }
         : { damping: 10, stiffness: 80 };
-      
+
       titleScale.value = withDelay(titleDelay, withSpring(1, springConfig));
       stackOffset.value = withDelay(stackDelay, withSpring(0, stackSpringConfig));
-      
+
       // Android optimization: Slower glow animation
       gamepadGlow.value = withRepeat(
         withSequence(
@@ -341,7 +341,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
     <View style={overlayStyle}>
       {/* Enhanced Floating Particles */}
       {showAsMainMenu && <FloatingParticles themeId={currentTheme} />}
-      
+
       <View style={containerStyle}>
         {/* Top Bar - Coins and Settings */}
         {showAsMainMenu && (
@@ -361,7 +361,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 )}
               </LinearGradient>
             </View>
-            
+
             <View style={styles.topRightButtons}>
               <TouchableOpacity onPress={onThemePress} style={styles.settingsButton}>
                 <LinearGradient
@@ -371,15 +371,15 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                   <Palette size={24} color={themeStyles.textPrimary} />
                 </LinearGradient>
               </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.settingsButton}>
+
+              {/* <TouchableOpacity style={styles.settingsButton}>
                 <LinearGradient
                   colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']}
                   style={styles.settingsGradient}
                 >
                   <Trophy size={24} color={themeStyles.accent} />
                 </LinearGradient>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         )}
@@ -390,8 +390,10 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
             {/* Animated Block Stack Display - NOW ABOVE THE TEXT */}
             <Animated.View style={[styles.blockStackContainer, stackAnimatedStyle]}>
               <MemoizedAnimatedBlock
-                width={IS_ANDROID ? 110 : 120} // Slightly smaller on Android
-                height={IS_ANDROID ? 28 : 31}
+                width={120} // Slightly smaller on Android
+                height={31}
+                //width={IS_ANDROID ? 110 : 120} // Slightly smaller on Android
+                //height={IS_ANDROID ? 28 : 31}
                 x={0}
                 y={0}
                 colors={blockColors[0]}
@@ -399,28 +401,40 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={IS_ANDROID ? 95 : 105}
-                height={IS_ANDROID ? 28 : 31}
-                x={IS_ANDROID ? 7.5 : 7.5}
-                y={IS_ANDROID ? -25 : -28}
+                width={105}
+                height={31}
+                x={7.5}
+                y={-28}
+                // width={IS_ANDROID ? 95 : 105}
+                // height={IS_ANDROID ? 28 : 31}
+                // x={IS_ANDROID ? 7.5 : 7.5}
+                // y={IS_ANDROID ? -25 : -28}
                 colors={blockColors[1]}
                 delay={IS_ANDROID ? 800 : 1000}
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={IS_ANDROID ? 115 : 125}
-                height={IS_ANDROID ? 28 : 31}
-                x={IS_ANDROID ? -2.5 : -2.5}
-                y={IS_ANDROID ? -50 : -56}
+                width={125}
+                height={31}
+                x={-2.5}
+                y={-56}
+                // width={IS_ANDROID ? 115 : 125}
+                // height={IS_ANDROID ? 28 : 31}
+                // x={IS_ANDROID ? -2.5 : -2.5}
+                // y={IS_ANDROID ? -50 : -56}
                 colors={blockColors[2]}
                 delay={IS_ANDROID ? 1000 : 1200}
                 themeId={currentTheme}
               />
               <MemoizedAnimatedBlock
-                width={IS_ANDROID ? 85 : 95}
-                height={IS_ANDROID ? 28 : 31}
-                x={IS_ANDROID ? 12.5 : 12.5}
-                y={IS_ANDROID ? -75 : -84}
+                width={95}
+                height={31}
+                x={12.5}
+                y={-84}
+                // width={IS_ANDROID ? 85 : 95}
+                // height={IS_ANDROID ? 28 : 31}
+                // x={IS_ANDROID ? 12.5 : 12.5}
+                // y={IS_ANDROID ? -75 : -84}
                 colors={blockColors[3]}
                 delay={IS_ANDROID ? 1200 : 1400}
                 themeId={currentTheme}
@@ -436,7 +450,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 TOWER
               </Text>
             </View>
-            
+
             <Text style={[styles.gameSubtitle, { color: themeStyles.textSecondary }]}>
               Stack blocks to build the ultimate tower
             </Text>
@@ -454,8 +468,8 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
         )}
 
         {/* Game Modes - SMALLER CARDS */}
-        <ScrollView 
-          style={styles.modesContainer} 
+        <ScrollView
+          style={styles.modesContainer}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.modesContent}
         >
@@ -477,8 +491,8 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                     isSelected
                       ? [themeStyles.accent, themeStyles.primary]
                       : mode.unlocked
-                      ? [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']
-                      : ['rgba(100, 100, 100, 0.2)', 'rgba(60, 60, 60, 0.2)']
+                        ? [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']
+                        : ['rgba(100, 100, 100, 0.2)', 'rgba(60, 60, 60, 0.2)']
                   }
                   style={[
                     styles.modeCardGradient,
@@ -494,10 +508,10 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                     ]}>
                       {mode.unlocked ? (
                         <>
-                          <ModeIcon 
-                            mode={mode.id} 
-                            size={32} 
-                            color={isSelected ? '#fff' : themeStyles.textPrimary} 
+                          <ModeIcon
+                            mode={mode.id}
+                            size={32}
+                            color={isSelected ? '#fff' : themeStyles.textPrimary}
                           />
                           {isSelected && (
                             <View style={[
@@ -510,11 +524,11 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                         <Lock size={32} color="#666" />
                       )}
                     </View>
-                    
+
                     <View style={styles.modeInfo}>
                       <View style={styles.modeNameContainer}>
                         <Text style={[
-                          styles.modeName, 
+                          styles.modeName,
                           { color: isSelected ? '#fff' : themeStyles.textPrimary },
                           !mode.unlocked && styles.lockedText
                         ]}>
@@ -528,7 +542,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                         )}
                       </View>
                       <Text style={[
-                        styles.modeDescription, 
+                        styles.modeDescription,
                         { color: isSelected ? 'rgba(255, 255, 255, 0.9)' : themeStyles.textSecondary },
                         !mode.unlocked && styles.lockedText
                       ]}>
@@ -556,14 +570,14 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
         {/* Enhanced Start Game Button with Gaming Pad */}
         {showAsMainMenu && (
           <View style={styles.startSection}>
-            <TouchableOpacity 
-              style={[styles.startButton, !selectedMode && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.startButton, !selectedMode && styles.disabledButton]}
               onPress={() => selectedMode && onModeSelect(selectedMode)}
               disabled={!selectedMode}
             >
               <LinearGradient
-                colors={selectedMode 
-                  ? [themeStyles.accent, themeStyles.primary, themeStyles.accent] 
+                colors={selectedMode
+                  ? [themeStyles.accent, themeStyles.primary, themeStyles.accent]
                   : ['#666', '#444', '#666']
                 }
                 style={[
@@ -588,7 +602,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                     </Animated.View>
                   )}
                 </View>
-                
+
                 {selectedMode && (
                   <View style={[
                     styles.startButtonGlow,
@@ -649,7 +663,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, //20
     paddingBottom: 20, //40
   },
-  
+
   // Enhanced Particles
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -726,14 +740,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 10, //40
     zIndex: 10,
-    paddingTop:25
+    paddingTop: 25
   },
   blockStackContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20, // Space between tower and text
-    marginRight:25,
-    marginTop:30
+    marginTop: 30
   },
   titleContainer: {
     alignItems: 'center',

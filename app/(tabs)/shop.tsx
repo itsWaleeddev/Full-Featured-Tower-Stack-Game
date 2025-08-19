@@ -5,7 +5,7 @@ import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag, Store } from '
 import { Theme } from '@/types/game';
 import { THEMES } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
-import { useSoundManager } from '@/hooks/useSoundManager';
+import { useSound } from '@/contexts/SoundContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,7 +30,7 @@ const getRarityIcon = (rarity: string) => {
 
 export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { playSound } = useSoundManager();
+  const { playSound } = useSound();
   
   // Use global theme context instead of local state
   const { 

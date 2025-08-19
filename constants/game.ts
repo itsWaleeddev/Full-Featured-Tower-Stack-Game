@@ -12,7 +12,7 @@ const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.95 : 1.0; // Slight reduction for 
 export const GAME_CONFIG = {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
-  BLOCK_HEIGHT: 100, //100
+  BLOCK_HEIGHT: 80, //100
   INITIAL_BLOCK_WIDTH: 200, //120
   
   // Optimized speeds for smooth high-speed gameplay
@@ -25,7 +25,7 @@ export const GAME_CONFIG = {
   COMBO_MULTIPLIER: 12, // Increased to reward precision at speed
   BASE_SCORE: 120, // Increased base score
   
-  TIME_ATTACK_DURATION: 10, // seconds
+  TIME_ATTACK_DURATION: 15, // seconds
   DAILY_CHALLENGE_REWARD: 50,
   
   // Enhanced performance settings for smooth high-speed animation

@@ -23,7 +23,7 @@ import { ThemeSelector } from '../../components/ThemeSelector';
 import { useGameState } from '../../hooks/useGameState';
 import { useHighScore } from '../../hooks/useHighScore';
 import { useTheme } from '../../contexts/GameContext';
-import { useSoundManager } from '../../hooks/useSoundManager';
+import { useSound } from '../../contexts/SoundContext';
 import { GAME_CONFIG, ANIMATION_CONFIG, CHALLENGE_LEVELS, THEMES } from '../../constants/game';
 import { GameMode, ChallengeLevel, DailyChallenge } from '../../types/game';
 import { generateDailyChallenge, calculateChallengeStars } from '../../utils/gameLogic';
@@ -66,7 +66,7 @@ export default function StackTowerGame() {
   } = useTheme();
 
   // Sound management
-  const { playSound, stopAllSounds, soundEnabled, toggleSound } = useSoundManager();
+  const { playSound, stopAllSounds, soundEnabled, toggleSound } = useSound();
 
   // Refs and animated values
   const animationRef = useRef<number | undefined>(undefined);
@@ -328,7 +328,7 @@ export default function StackTowerGame() {
   // Camera animation based on tower height
   // Optimized camera animation with faster response for high-speed gameplay
   useEffect(() => {
-    const blockHeight = 120;
+    const blockHeight = 100;
     const screenHeight = GAME_CONFIG.SCREEN_HEIGHT || 800;
     const halfScreenHeight = screenHeight / 2;
     const currentTowerHeightPixels = gameState.tower_height * blockHeight;

@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { ChallengeLevel } from '@/types/game';
 import { CHALLENGE_LEVELS } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
-import { useSoundManager } from '@/hooks/useSoundManager';
+import { useSound } from '@/contexts/SoundContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -53,7 +53,7 @@ const getCoinsForLevel = (levelId: number) => {
 
 export default function ChallengesScreen() {
   const router = useRouter();
-  const { playSound } = useSoundManager();
+  const { playSound } = useSound();
   const { themeState, getCurrentUnlockedLevel } = useTheme();
   const [selectedLevel, setSelectedLevel] = useState<ChallengeLevel | null>(null);
 
@@ -141,11 +141,11 @@ export default function ChallengesScreen() {
           style={styles.levelCardGradient}
         >
           {/* Current Level Indicator */}
-          {isCurrentLevel && (
+          {/* {isCurrentLevel && (
             <View style={styles.currentLevelIndicator}>
               <Text style={styles.currentLevelText}>NEXT</Text>
             </View>
-          )}
+          )} */}
 
           {/* Level Number */}
           <View style={styles.levelHeader}>

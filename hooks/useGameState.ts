@@ -4,10 +4,10 @@ import { GameState, Block, GameMode, ChallengeLevel } from '../types/game';
 import { createInitialBlock, createNewBlock, calculateCollision, calculateScore } from '../utils/gameLogic';
 import { GAME_CONFIG, CHALLENGE_LEVELS } from '../constants/game';
 import { saveGameData } from '../utils/storage';
-import { useSoundManager } from './useSoundManager';
+import { useSound } from '../contexts/SoundContext';
 
 export const useGameState = () => {
-  const { playSound } = useSoundManager();
+  const { playSound } = useSound();
   const soundPlayedRef = useRef<Set<string>>(new Set());
   
   const [gameState, setGameState] = useState<GameState>({

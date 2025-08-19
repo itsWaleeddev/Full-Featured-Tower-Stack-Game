@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award, Zap, GamepadIcon } from 'lucide-react-native';
+import { Trophy, Medal, Crown, Star, Target, Clock, Infinity, TrendingUp, Calendar, Award, Zap, Gamepad as GamepadIcon } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
-import { useSoundManager } from '@/hooks/useSoundManager';
+import { useSound } from '@/contexts/SoundContext';
 import { GameMode, ScoreRecord } from '@/types/game';
 import { getTopScores } from '@/utils/storage';
+import { CHALLENGE_LEVELS } from '@/constants/game';
+import { useFocusEffect } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -84,14 +86,38 @@ const getRankGradient = (rank: number): [string, string] => {
 };
 
 export default function LeaderboardScreen() {
-  const { playSound } = useSoundManager();
+  const { playSound } = useSound();
   const { themeState } = useTheme();
   const [selectedMode, setSelectedMode] = useState<GameMode | 'all'>('all');
   const [recentScores, setRecentScores] = useState<ScoreRecord[]>([]);
+  const [modeStats, setModeStats] = useState<{
+    classic: { gamesPlayed: number; averageScore: number; bestStreak: number };
+    timeAttack: { gamesPlayed: number; averageScore: number; bestTime: number };
+    challenge: { gamesPlayed: number; levelsCompleted: number; totalStars: number; averageStars: number; };
+    totalGamesPlayed: number;
+  }>({
+    classic: { gamesPlayed: 0, averageScore: 0, bestStreak: 0 },
+    timeAttack: { gamesPlayed: 0, averageScore: 0, bestTime: 0 },
+    challenge: { gamesPlayed: 0, levelsCompleted: 0, totalStars: 0, averageStars: 0 },
+    totalGamesPlayed: 0,
+  });
 
-  useEffect(() => {
-    loadRecentScores();
-  }, [selectedMode]);
+  useFocusEffect(
+    useCallback(() => {
+      loadRecentScores();
+      calculateModeStats();
+
+      // optional cleanup
+      return () => {
+        //console.log("Leaderboard unfocused");
+      };
+    }, [selectedMode])
+  );
+
+  // useEffect(() => {
+  //   loadRecentScores();
+  //   calculateModeStats();
+  // }, [selectedMode]);
 
   const loadRecentScores = async () => {
     try {
@@ -99,6 +125,65 @@ export default function LeaderboardScreen() {
       setRecentScores(scores);
     } catch (error) {
       console.error('Failed to load scores:', error);
+    }
+  };
+
+  const calculateModeStats = async () => {
+    try {
+      // Get all scores for each mode
+      const classicScores = await getTopScores('classic', 100);
+      const timeAttackScores = await getTopScores('timeAttack', 100);
+      const challengeScores = await getTopScores('challenge', 100);
+
+      // Calculate classic mode stats
+      const classicStats = {
+        gamesPlayed: classicScores.length,
+        averageScore: classicScores.length > 0
+          ? Math.floor(classicScores.reduce((sum, score) => sum + score.score, 0) / classicScores.length)
+          : 0,
+        bestStreak: classicScores.length > 0
+          ? Math.max(...classicScores.map(score => score.blocks))
+          : 0,
+      };
+
+      // Calculate time attack mode stats
+      const timeAttackStats = {
+        gamesPlayed: timeAttackScores.length,
+        averageScore: timeAttackScores.length > 0
+          ? Math.floor(timeAttackScores.reduce((sum, score) => sum + score.score, 0) / timeAttackScores.length)
+          : 0,
+        bestTime: timeAttackScores.length > 0
+          ? Math.max(...timeAttackScores.map(score => score.blocks)) // Using blocks as time indicator
+          : 0,
+      };
+
+      // Calculate challenge mode stats
+      const challengeProgress = themeState.challengeProgress;
+      const completedLevels = Object.values(challengeProgress).filter(level => level.completed);
+      const totalStars = Object.values(challengeProgress).reduce((sum, level) => sum + level.stars, 0);
+
+      const challengeStats = {
+        gamesPlayed: challengeScores.length,
+        levelsCompleted: completedLevels.length,
+        totalStars,
+        averageStars: completedLevels.length > 0
+          ? Math.round((totalStars / completedLevels.length) * 10) / 10
+          : 0,
+      };
+
+      const totalGamesPlayed =
+        classicStats.gamesPlayed +
+        timeAttackStats.gamesPlayed +
+        challengeStats.gamesPlayed;
+
+      setModeStats({
+        classic: classicStats,
+        timeAttack: timeAttackStats,
+        challenge: challengeStats,
+        totalGamesPlayed,
+      });
+    } catch (error) {
+      console.error('Failed to calculate mode stats:', error);
     }
   };
 
@@ -119,8 +204,8 @@ export default function LeaderboardScreen() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -129,7 +214,7 @@ export default function LeaderboardScreen() {
 
   return (
     <LinearGradient colors={PREMIUM_COLORS.background} style={styles.container}>
-      
+
       {/* Header */}
       <View style={styles.header}>
         <LinearGradient
@@ -186,7 +271,7 @@ export default function LeaderboardScreen() {
                 style={styles.secondaryStatGradient}
               >
                 <GamepadIcon size={20} color={PREMIUM_COLORS.success} />
-                <Text style={styles.secondaryStatValue}>{themeState.totalGamesPlayed}</Text>
+                <Text style={styles.secondaryStatValue}>{modeStats.totalGamesPlayed}</Text>
                 <Text style={styles.secondaryStatLabel}>Games</Text>
               </LinearGradient>
             </View>
@@ -207,8 +292,9 @@ export default function LeaderboardScreen() {
         {/* Game Mode Stats */}
         <View style={styles.gameModeStats}>
           <Text style={styles.sectionTitle}>Game Modes</Text>
-          
+
           <View style={styles.modeStatsGrid}>
+            {/* Classic Mode Stats */}
             <View style={styles.modeStatCard}>
               <LinearGradient
                 colors={PREMIUM_COLORS.cardGradient}
@@ -224,9 +310,18 @@ export default function LeaderboardScreen() {
                   {themeState.highScores.classic.toLocaleString()}
                 </Text>
                 <Text style={styles.modeStatLabel}>Best Score</Text>
+                <View style={styles.modeStatSecondary}>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    {modeStats.classic.gamesPlayed} games
+                  </Text>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    Avg: {modeStats.classic.averageScore.toLocaleString()}
+                  </Text>
+                </View>
               </LinearGradient>
             </View>
 
+            {/* Time Attack Mode Stats */}
             <View style={styles.modeStatCard}>
               <LinearGradient
                 colors={PREMIUM_COLORS.cardGradient}
@@ -242,9 +337,18 @@ export default function LeaderboardScreen() {
                   {themeState.highScores.timeAttack.toLocaleString()}
                 </Text>
                 <Text style={styles.modeStatLabel}>Best Score</Text>
+                <View style={styles.modeStatSecondary}>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    {modeStats.timeAttack.gamesPlayed} games
+                  </Text>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    Best: {modeStats.timeAttack.bestTime} blocks
+                  </Text>
+                </View>
               </LinearGradient>
             </View>
 
+            {/* Challenge Mode Stats */}
             <View style={styles.modeStatCard}>
               <LinearGradient
                 colors={PREMIUM_COLORS.cardGradient}
@@ -258,6 +362,14 @@ export default function LeaderboardScreen() {
                 </View>
                 <Text style={styles.modeStatValue}>{completedLevels}/20</Text>
                 <Text style={styles.modeStatLabel}>Completed</Text>
+                <View style={styles.modeStatSecondary}>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    {totalStars} total stars
+                  </Text>
+                  <Text style={styles.modeStatSecondaryValue}>
+                    Avg: {modeStats.challenge.averageStars} stars
+                  </Text>
+                </View>
               </LinearGradient>
             </View>
           </View>
@@ -266,9 +378,9 @@ export default function LeaderboardScreen() {
         {/* Mode Filter */}
         <View style={styles.filterSection}>
           <Text style={styles.sectionTitle}>Recent Scores</Text>
-          
-          <ScrollView 
-            horizontal 
+
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.modeFilter}
             contentContainerStyle={styles.modeFilterContent}
@@ -281,7 +393,7 @@ export default function LeaderboardScreen() {
               >
                 <LinearGradient
                   colors={
-                    selectedMode === mode.id 
+                    selectedMode === mode.id
                       ? [mode.color, mode.color + '80']
                       : ['rgba(30, 41, 59, 0.8)', 'rgba(15, 23, 42, 0.6)']
                   }
@@ -318,7 +430,10 @@ export default function LeaderboardScreen() {
                 </View>
                 <Text style={styles.emptyStateTitle}>No scores yet</Text>
                 <Text style={styles.emptyStateSubtitle}>
-                  Start playing to build your leaderboard!
+                  {selectedMode === 'all'
+                    ? 'Start playing to build your leaderboard!'
+                    : `Play ${getModeDisplayName(selectedMode as GameMode)} to see scores here!`
+                  }
                 </Text>
               </LinearGradient>
             </View>
@@ -340,8 +455,8 @@ export default function LeaderboardScreen() {
                       </View>
                       <Text style={[
                         styles.rankNumber,
-                        { 
-                          color: index < 3 
+                        {
+                          color: index < 3
                             ? [PREMIUM_COLORS.gold, PREMIUM_COLORS.silver, PREMIUM_COLORS.bronze][index]
                             : PREMIUM_COLORS.textSecondary
                         }
@@ -365,13 +480,27 @@ export default function LeaderboardScreen() {
                             <Text style={styles.modeChipText}>
                               {getModeDisplayName(score.mode)}
                             </Text>
+                            {/* Show level for challenge mode */}
+                            {score.mode === 'challenge' && score.level && (
+                              <Text style={styles.levelChipText}>
+                                L{score.level}
+                              </Text>
+                            )}
                           </LinearGradient>
                         </View>
                       </View>
-                      
+
                       <View style={styles.scoreFooter}>
                         <View style={styles.scoreDetail}>
-                          <Text style={styles.scoreBlocks}>{score.blocks} blocks</Text>
+                          <Text style={styles.scoreBlocks}>
+                            {score.blocks} blocks
+                            {score.mode === 'challenge' && score.level && (
+                              <Text style={styles.challengeLevelText}>
+                                {' • '}
+                                {CHALLENGE_LEVELS.find(l => l.id === score.level)?.name || `Level ${score.level}`}
+                              </Text>
+                            )}
+                          </Text>
                         </View>
                         <Text style={styles.scoreDate}>
                           {formatDate(score.date)}
@@ -563,6 +692,18 @@ const styles = StyleSheet.create({
     color: PREMIUM_COLORS.textSecondary,
     fontWeight: '600',
   },
+  modeStatSecondary: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148, 163, 184, 0.1)',
+  },
+  modeStatSecondaryValue: {
+    fontSize: 12,
+    color: PREMIUM_COLORS.textTertiary,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
   filterSection: {
     marginBottom: 24,
   },
@@ -592,7 +733,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow:"hidden"
+    overflow: "hidden"
   },
   modeButtonText: {
     fontSize: 14,
@@ -690,6 +831,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: PREMIUM_COLORS.primary,
   },
+  levelChipText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: PREMIUM_COLORS.primaryLight,
+    marginLeft: 4,
+    opacity: 0.8,
+  },
   scoreFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -703,6 +851,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: PREMIUM_COLORS.textSecondary,
+  },
+  challengeLevelText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: PREMIUM_COLORS.textTertiary,
   },
   scoreDate: {
     fontSize: 12,

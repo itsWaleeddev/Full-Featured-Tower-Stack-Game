@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Settings, Volume2, VolumeX, Trash2, Info, Target, Zap, Shield, HelpCircle } from 'lucide-react-native';
+import { Settings, Volume2, VolumeX, Trash2, Info, Target, Zap, Shield, CircleHelp as HelpCircle } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
-import { useSoundManager } from '@/hooks/useSoundManager';
+import { useSound } from '@/contexts/SoundContext';
 import { Background } from '@/components/Background';
 import { clearAllData } from '@/utils/storage';
+import { Audio } from "expo-av";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,7 +46,7 @@ interface DifficultyOption {
 }
 
 export default function SettingsScreen() {
-  const { playSound, soundEnabled, toggleSound } = useSoundManager();
+  const { playSound, soundEnabled, toggleSound } = useSound();
   const { themeState, updateThemeState } = useTheme();
   const [isResetting, setIsResetting] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('medium');
@@ -77,8 +78,8 @@ export default function SettingsScreen() {
     },
   ];
 
-  const handleSoundToggle = () => {
-    playSound('button', 0.6);
+  const handleSoundToggle = async () => {
+    //playSound('button', 0.6);
     toggleSound();
   };
 
@@ -91,7 +92,7 @@ export default function SettingsScreen() {
 
   const handleResetData = () => {
     playSound('button', 0.6);
-    
+
     Alert.alert(
       'Reset All Data',
       'This will permanently delete all your progress, scores, and unlocked themes. This action cannot be undone.',
@@ -108,7 +109,7 @@ export default function SettingsScreen() {
             setIsResetting(true);
             try {
               await clearAllData();
-              
+
               // Reset theme state to initial values
               updateThemeState({
                 coins: 0,
@@ -140,7 +141,7 @@ export default function SettingsScreen() {
 
   return (
     <LinearGradient colors={PREMIUM_COLORS.background} style={styles.container}>
-      
+
       {/* Header */}
       <View style={styles.header}>
         <LinearGradient
@@ -170,7 +171,7 @@ export default function SettingsScreen() {
         {/* Game Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Game Settings</Text>
-          
+
           {/* Sound Settings */}
           <View style={styles.settingCard}>
             <LinearGradient
@@ -194,16 +195,16 @@ export default function SettingsScreen() {
                 <Switch
                   value={soundEnabled}
                   onValueChange={handleSoundToggle}
-                  trackColor={{ 
-                    false: 'rgba(100, 116, 139, 0.3)', 
-                    true: PREMIUM_COLORS.primary + '80' 
+                  trackColor={{
+                    false: 'rgba(100, 116, 139, 0.3)',
+                    true: PREMIUM_COLORS.primary + '80'
                   }}
                   thumbColor={soundEnabled ? PREMIUM_COLORS.primary : PREMIUM_COLORS.textTertiary}
                   ios_backgroundColor="rgba(100, 116, 139, 0.3)"
                 />
               </View>
-              
-              {soundEnabled && (
+
+              {/* {soundEnabled && (
                 <View style={styles.settingActions}>
                   <TouchableOpacity
                     style={styles.testButton}
@@ -218,7 +219,7 @@ export default function SettingsScreen() {
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
-              )}
+              )} */}
             </LinearGradient>
           </View>
 
@@ -249,7 +250,7 @@ export default function SettingsScreen() {
                   >
                     <LinearGradient
                       colors={
-                        selectedDifficulty === option.id 
+                        selectedDifficulty === option.id
                           ? option.gradient
                           : ['rgba(30, 41, 59, 0.4)', 'rgba(15, 23, 42, 0.6)']
                       }
@@ -295,7 +296,7 @@ export default function SettingsScreen() {
         {/* Data Management Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
-          
+
           <View style={styles.settingCard}>
             <LinearGradient
               colors={PREMIUM_COLORS.cardGradient}
@@ -314,7 +315,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.settingActions}>
                 <TouchableOpacity
                   style={styles.dangerButton}
@@ -352,7 +353,7 @@ export default function SettingsScreen() {
                 <Text style={styles.appTech}>Built with React Native & Expo</Text>
               </View>
             </View>
-            
+
 
           </LinearGradient>
         </View>
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 24,
@@ -469,6 +470,7 @@ const styles = StyleSheet.create({
   settingActions: {
     marginTop: 16,
     paddingTop: 16,
+    flex:1,
     borderTopWidth: 1,
     borderTopColor: PREMIUM_COLORS.border,
   },
@@ -480,6 +482,7 @@ const styles = StyleSheet.create({
   testButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
@@ -536,11 +539,13 @@ const styles = StyleSheet.create({
   dangerButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
+    justifyContent:"center"
   },
   dangerButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent:"center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
@@ -555,7 +560,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: PREMIUM_COLORS.border,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   appInfoGradient: {
     padding: 20,

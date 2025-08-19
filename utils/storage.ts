@@ -139,7 +139,7 @@ export const loadGameData = async (): Promise<Partial<GameState>> => {
 export const saveScore = async (scoreRecord: ScoreRecord): Promise<void> => {
   try {
     const existingScores = await getScores();
-    const updatedScores = [...existingScores, scoreRecord]
+    const updatedScores = [scoreRecord, ...existingScores]
       .sort((a, b) => b.score - a.score)
       .slice(0, 50); // Keep top 50 scores
 
