@@ -47,7 +47,7 @@ interface DifficultyOption {
 
 export default function SettingsScreen() {
   const { playSound, soundEnabled, toggleSound } = useSound();
-  const { themeState, updateThemeState } = useTheme();
+  const { themeState, updateThemeState, setDifficulty } = useTheme();
   const [isResetting, setIsResetting] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('medium');
 
@@ -87,7 +87,7 @@ export default function SettingsScreen() {
     playSound('button', 0.6);
     setSelectedDifficulty(difficulty);
     // Here you would typically save this to storage or context
-    // updateThemeState({ ...themeState, difficulty });
+    setDifficulty(difficulty); // ← updates global context
   };
 
   const handleResetData = () => {

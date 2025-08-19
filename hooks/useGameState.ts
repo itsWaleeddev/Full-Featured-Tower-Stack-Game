@@ -5,11 +5,14 @@ import { createInitialBlock, createNewBlock, calculateCollision, calculateScore 
 import { GAME_CONFIG, CHALLENGE_LEVELS } from '../constants/game';
 import { saveGameData } from '../utils/storage';
 import { useSound } from '../contexts/SoundContext';
+import { useTheme } from '../contexts/GameContext';
 
 export const useGameState = () => {
   const { playSound } = useSound();
   const soundPlayedRef = useRef<Set<string>>(new Set());
-  
+  const { themeState } = useTheme();
+  const difficulty = themeState.selectedDifficulty;
+
   const [gameState, setGameState] = useState<GameState>({
     blocks: [createInitialBlock()],
     score: 0,
@@ -33,9 +36,9 @@ export const useGameState = () => {
   // Reset sound tracking when game starts
   const startGame = useCallback((mode: GameMode = 'classic', level?: ChallengeLevel) => {
     soundPlayedRef.current.clear();
-    
+
     const initialBlock = createInitialBlock();
-    const firstMovingBlock = createNewBlock(initialBlock, 1, mode, level);
+    const firstMovingBlock = createNewBlock(initialBlock, 1, mode, level, difficulty);
 
     setGameState(prev => ({
       ...prev,
@@ -137,7 +140,8 @@ export const useGameState = () => {
         newBlock,
         prev.tower_height + 1,
         prev.mode,
-        prev.level ? CHALLENGE_LEVELS.find(l => l.id === prev.level) : undefined
+        prev.level ? CHALLENGE_LEVELS.find(l => l.id === prev.level) : undefined,
+        difficulty
       );
 
       return {
@@ -168,7 +172,7 @@ export const useGameState = () => {
       if (prev.mode !== 'timeAttack' && !(prev.mode === 'challenge' && prev.timeRemaining !== undefined)) {
         return prev;
       }
-      
+
       if (!prev.gameStarted || prev.gameOver) return prev;
 
       const newTime = Math.max(0, (prev.timeRemaining || 0) - 1);
@@ -205,7 +209,7 @@ export const useGameState = () => {
   // Batch state updates for better performance
   const resetGame = useCallback(() => {
     soundPlayedRef.current.clear();
-    
+
     setGameState(prev => ({
       ...prev,
       blocks: [createInitialBlock()],
@@ -239,7 +243,7 @@ export const useGameState = () => {
       // Only update if position actually changed significantly
       const positionChanged = Math.abs(prev.currentBlock.x - newX) > 0.5;
       const directionChanged = newDirection && prev.currentBlock.direction !== newDirection;
-      
+
       if (!positionChanged && !directionChanged) return prev;
 
       return {

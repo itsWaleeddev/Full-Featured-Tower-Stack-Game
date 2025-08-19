@@ -4,6 +4,8 @@ import { ChallengeLevel, ScoreRecord, GameMode } from '../types/game';
 import { CHALLENGE_LEVELS } from '../constants/game';
 import { saveGameData, loadGameData, flushPendingWrites } from '../utils/storage';
 
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
 interface ThemeState {
   coins: number;
   currentTheme: string;
@@ -16,6 +18,7 @@ interface ThemeState {
     challenge: number;
   };
   totalGamesPlayed: number;
+  selectedDifficulty: DifficultyLevel; // ← new
 }
 
 interface ThemeContextType {
@@ -31,6 +34,7 @@ interface ThemeContextType {
   updateHighScore: (mode: GameMode, score: number) => boolean;
   incrementGamesPlayed: () => void;
   getHighScore: (mode: GameMode) => number;
+  setDifficulty: (difficulty: DifficultyLevel) => void; // ← added
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -44,7 +48,8 @@ type ThemeAction =
   | { type: 'UPDATE_CHALLENGE_PROGRESS'; levelId: number; progress: Partial<ChallengeLevel> }
   | { type: 'COMPLETE_CHALLENGE_LEVEL'; levelId: number; stars: number; score: number }
   | { type: 'UPDATE_HIGH_SCORE'; mode: GameMode; score: number }
-  | { type: 'INCREMENT_GAMES_PLAYED' };
+  | { type: 'INCREMENT_GAMES_PLAYED' }
+  | { type: 'SET_DIFFICULTY'; difficulty: DifficultyLevel };
 
 const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
   switch (action.type) {
@@ -78,10 +83,10 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
       const currentLevel = state.challengeProgress[action.levelId];
       const newStars = Math.max(currentLevel?.stars || 0, action.stars);
       const isCompleted = true;
-      
+
       // Update current unlocked level
       const newUnlockedLevel = Math.max(state.currentUnlockedLevel, action.levelId + 1);
-      
+
       return {
         ...state,
         challengeProgress: {
@@ -105,6 +110,8 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
       };
     case 'INCREMENT_GAMES_PLAYED':
       return { ...state, totalGamesPlayed: state.totalGamesPlayed + 1 };
+    case 'SET_DIFFICULTY':
+      return { ...state, selectedDifficulty: action.difficulty };
     default:
       return state;
   }
@@ -114,11 +121,11 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
 const initializeChallengeProgress = (): Record<number, ChallengeLevel> => {
   const progress: Record<number, ChallengeLevel> = {};
   CHALLENGE_LEVELS.forEach(level => {
-    progress[level.id] = { 
-      ...level, 
-      completed: false, 
+    progress[level.id] = {
+      ...level,
+      completed: false,
       stars: 0,
-      bestScore: 0 
+      bestScore: 0
     };
   });
   return progress;
@@ -136,6 +143,7 @@ const initialState: ThemeState = {
     challenge: 0,
   },
   totalGamesPlayed: 0,
+  selectedDifficulty: 'medium', // default
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -173,8 +181,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
 
-        dispatch({ 
-          type: 'UPDATE_STATE', 
+        dispatch({
+          type: 'UPDATE_STATE',
           newState: {
             ...savedData,
             challengeProgress: mergedChallengeProgress,
@@ -190,14 +198,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Debounced save to prevent excessive storage operations
   const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Save theme data when state changes
   useEffect(() => {
     // Debounce saves to prevent excessive storage operations
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = setTimeout(() => {
       saveGameData({
         coins: themeState.coins,
@@ -213,15 +221,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         lastDailyChallengeDate: '',
       });
     }, 300); // 300ms debounce
-    
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
   }, [
-    themeState.coins, 
-    themeState.currentTheme, 
+    themeState.coins,
+    themeState.currentTheme,
     themeState.unlockedThemes,
     themeState.challengeProgress,
     themeState.currentUnlockedLevel,
@@ -253,13 +261,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     dispatch({ type: 'UPDATE_CHALLENGE_PROGRESS', levelId, progress });
   };
 
+  const setDifficulty = (difficulty: DifficultyLevel) => {
+    dispatch({ type: 'SET_DIFFICULTY', difficulty });
+  };
+
   const completeChallengeLevel = (levelId: number, stars: number, score: number, isNewStars: boolean): number => {
     const currentLevel = themeState.challengeProgress[levelId];
     const previousStars = currentLevel?.stars || 0;
     const newStarsEarned = Math.max(0, stars - previousStars);
-    
+
     dispatch({ type: 'COMPLETE_CHALLENGE_LEVEL', levelId, stars, score });
-    
+
     // Calculate coin reward
     let coinsEarned = 0;
     if (isNewStars && newStarsEarned > 0) {
@@ -267,12 +279,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const baseCoinsPerLevel = 100 + (levelId - 1) * 50;
       coinsEarned = Math.floor((baseCoinsPerLevel * stars) / 3); // Scale based on stars earned
     }
-    
+
     if (coinsEarned > 0) {
       console.log(coinsEarned);
       dispatch({ type: 'ADD_COINS', amount: coinsEarned });
     }
-    
+
     return coinsEarned;
   };
 
@@ -283,11 +295,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateHighScore = (mode: GameMode, score: number): boolean => {
     const currentHighScore = themeState.highScores[mode] || 0;
     const isNewHighScore = score > currentHighScore;
-    
+
     if (isNewHighScore) {
       dispatch({ type: 'UPDATE_HIGH_SCORE', mode, score });
     }
-    
+
     return isNewHighScore;
   };
 
@@ -314,6 +326,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateHighScore,
         incrementGamesPlayed,
         getHighScore,
+        setDifficulty,
       }}
     >
       {children}

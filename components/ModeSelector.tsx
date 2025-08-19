@@ -15,6 +15,7 @@ import Animated, {
 import { Infinity, Clock, Target, Lock, Palette, Coins, Settings, Zap, Trophy, Star, Gamepad2 } from 'lucide-react-native';
 import { GameMode, GameModeConfig } from '../types/game';
 import { GAME_MODES, THEMES } from '../constants/game';
+import { useSound } from '@/contexts/SoundContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IS_ANDROID = Platform.OS === 'android';
@@ -284,6 +285,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
   const [titleScale] = useState(useSharedValue(0));
   const [stackOffset] = useState(useSharedValue(50));
   const [gamepadGlow] = useState(useSharedValue(0));
+  const { playSound, soundEnabled, toggleSound } = useSound();
 
   if (!visible) return null;
 
@@ -483,7 +485,16 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                   isSelected && styles.selectedModeCard,
                   !mode.unlocked && styles.lockedModeCard,
                 ]}
-                onPress={() => mode.unlocked && (showAsMainMenu ? setSelectedMode?.(mode.id) : onModeSelect(mode.id))}
+                onPress={() => {
+                  playSound('button', 0.7);
+                  if (mode.unlocked) {
+                    if (showAsMainMenu) {
+                      setSelectedMode?.(mode.id);
+                    } else {
+                      onModeSelect(mode.id);
+                    }
+                  }
+                }}
                 disabled={!mode.unlocked}
               >
                 <LinearGradient

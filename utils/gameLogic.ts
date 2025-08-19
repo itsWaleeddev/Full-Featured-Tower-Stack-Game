@@ -27,6 +27,8 @@ const INITIAL_BLOCK_X = (SCREEN_WIDTH - INITIAL_BLOCK_WIDTH) / 2;
 const INITIAL_BLOCK_Y = SCREEN_HEIGHT - 160; //200
 const COLOR_COUNT = COLORS.blocks.length;
 
+type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
 // Object pooling for frequently created objects
 const blockPool = {
   pool: [] as Block[],
@@ -46,7 +48,7 @@ const colorCache = new Map<string, readonly [string, string]>();
 
 export const createInitialBlock = (): Block => {
   const block = blockPool.get();
-  
+
   // Directly assign properties for better performance
   block.id = 'base';
   block.x = INITIAL_BLOCK_X;
@@ -58,7 +60,7 @@ export const createInitialBlock = (): Block => {
   block.direction = 'right';
   block.speed = 0;
   block.type = 'normal';
-  
+
   return block;
 };
 
@@ -66,41 +68,63 @@ export const createNewBlock = (
   previousBlock: Block,
   level: number,
   mode: GameMode = 'classic',
-  challengeLevel?: ChallengeLevel
+  challengeLevel?: ChallengeLevel,
+  difficulty: DifficultyLevel = 'medium'
 ): Block => {
+
   const block = blockPool.get();
   const colorIndex = level % COLOR_COUNT;
-  
+
   // SIGNIFICANTLY ENHANCED SPEED CALCULATION with aggressive progression
   const speedCacheKey = `${level}-${mode}-${challengeLevel?.id || 'none'}`;
   let speed = speedCache.get(speedCacheKey);
-  
+
   if (speed === undefined) {
     // MUCH MORE AGGRESSIVE base speed calculation
     const baseSpeed = INITIAL_SPEED * SPEED_MULTIPLIER_BASE; // 3.2x faster base
     const incrementalSpeed = level * (SPEED_INCREMENT * SPEED_INCREMENT_MULTIPLIER); // 2.8x faster progression
     const exponentialBoost = Math.pow(1 + LEVEL_SPEED_BOOST, Math.min(level, 25)); // Exponential growth capped at level 25
-    
+
+    // Apply difficulty multiplier
+    let difficultyMultiplier = 1;
+    if (mode === 'classic' || mode === 'timeAttack') {
+      switch (difficulty) {
+        case 'easy':
+          difficultyMultiplier = 1;
+          break;
+        case 'medium':
+          difficultyMultiplier = 1.35;
+          break;
+        case 'hard':
+          difficultyMultiplier = 1.7; // same as timeAttack boost
+          break;
+      }
+    }
+
     // Calculate raw speed with exponential progression
     const rawSpeed = (baseSpeed + incrementalSpeed) * exponentialBoost;
-    
+
     // Apply higher max speed limit
     const maxSpeedLimit = MAX_SPEED * MAX_SPEED_MULTIPLIER; // 2.2x higher max speed
     speed = Math.min(rawSpeed, maxSpeedLimit);
 
     // ENHANCED mode-specific speed multipliers
     if (mode === 'timeAttack') {
-      speed *= 1.35; // Increased from 1.12 for more intense time attack
+      console.log(difficultyMultiplier)
+      speed *= difficultyMultiplier; // Increased from 1.12 for more intense time attack
     } else if (mode === 'challenge' && challengeLevel?.specialBlocks) {
       speed *= 1.28; // Increased from 1.12 for faster challenge mode
+    } else if (mode === 'classic') {
+      console.log(difficultyMultiplier)
+      speed *= difficultyMultiplier; // Increased from 1.12 for more intense time attack
     }
-    
+
     // ADDITIONAL: Combo-based speed boost (if available from context)
     // This would need to be passed in, but for now we can simulate progressive speed
     if (level > 10) {
       speed *= 1 + ((level - 10) * 0.08); // 8% speed boost per level after 10
     }
-    
+
     speedCache.set(speedCacheKey, speed);
   }
 
@@ -108,14 +132,14 @@ export const createNewBlock = (
   let blockType: Block['type'] = 'normal';
   let friction = 1;
   let weight = 1;
-  
+
   if (mode === 'challenge' && challengeLevel?.specialBlocks && level > 2) {
     const rand = Math.random();
     if (rand < 0.32) { // Slightly increased probability for more variety
       const specialTypes = challengeLevel.specialBlocks;
       const typeIndex = Math.floor(rand * specialTypes.length * 3.125);
       blockType = specialTypes[typeIndex % specialTypes.length];
-      
+
       // ENHANCED special block speed adjustments
       switch (blockType) {
         case 'slippery':
@@ -166,15 +190,15 @@ export const calculateCollision = (
   const movingWidth = movingBlock.width;
   const staticX = staticBlock.x;
   const staticWidth = staticBlock.width;
-  
+
   const leftEdge = Math.max(movingX, staticX);
   const rightEdge = Math.min(movingX + movingWidth, staticX + staticWidth);
   const overlapWidth = Math.max(0, rightEdge - leftEdge);
-  
+
   // ENHANCED: Perfect threshold with BETTER high-speed compensation
   let perfectThreshold = PERFECT_THRESHOLD;
   const blockSpeed = movingBlock.speed || 0;
-  
+
   // MORE GENEROUS speed compensation for much higher speeds
   if (blockSpeed > 12) {
     perfectThreshold *= 1.8; // Much more generous for very high speeds
@@ -197,11 +221,11 @@ export const calculateCollision = (
   const alignmentOffset = Math.abs(movingX - staticX);
   const isPerfect = alignmentOffset <= perfectThreshold;
   const slicedWidth = movingWidth - overlapWidth;
-  
+
   // Enhanced collision accuracy calculation with speed consideration
   const maxOffset = movingWidth * 0.5;
   let collisionAccuracy = Math.max(0, 1 - (alignmentOffset / maxOffset));
-  
+
   // Boost accuracy score for high-speed successful hits
   if (blockSpeed > 8 && collisionAccuracy > 0.6) {
     collisionAccuracy = Math.min(collisionAccuracy * 1.2, 1.0);
@@ -226,7 +250,7 @@ export const calculateScore = (
 ): number => {
   // Use bitwise operations where possible for integer calculations
   let baseScore = BASE_SCORE + (level << 5) + (level << 4) + (level << 1); // Equivalent to level * 50
-  
+
   // Perfect bonus
   if (isPerfect) {
     baseScore <<= 1; // Equivalent to baseScore *= 2
@@ -259,20 +283,20 @@ export const calculateScore = (
 export const getBackgroundColors = (themeId: string = 'default'): readonly [string, string] => {
   const cacheKey = `bg-${themeId}`;
   let colors = colorCache.get(cacheKey);
-  
+
   if (!colors) {
     const theme = COLORS.themes[themeId as keyof typeof COLORS.themes];
     colors = theme ? theme.background : COLORS.themes.default.background;
     colorCache.set(cacheKey, colors);
   }
-  
+
   return colors;
 };
 
 export const getBlockColors = (colorIndex: number, themeId: string = 'default'): readonly [string, string] => {
   const cacheKey = `block-${colorIndex}-${themeId}`;
   let colors = colorCache.get(cacheKey);
-  
+
   if (!colors) {
     const theme = COLORS.themes[themeId as keyof typeof COLORS.themes];
     if (theme) {
@@ -282,7 +306,7 @@ export const getBlockColors = (colorIndex: number, themeId: string = 'default'):
     }
     colorCache.set(cacheKey, colors);
   }
-  
+
   return colors;
 };
 
@@ -290,7 +314,7 @@ export const getBlockColors = (colorIndex: number, themeId: string = 'default'):
 export const generateDailyChallenge = (): import('../types/game').DailyChallenge => {
   const today = new Date();
   const dayOfMonth = today.getDate();
-  
+
   // Pre-defined challenges with consistent typing
   const challenges = [
     {
@@ -354,11 +378,11 @@ export const calculateChallengeStars = (
   if (!completed) return 0;
 
   let stars = 1;
-  
+
   // Optimized percentage calculation avoiding division where possible
   const perfectPercentage = blocksStacked > 0 ? perfectBlocks / blocksStacked : 0;
   const targetBlocks = level.targetBlocks;
-  
+
   // Use pre-calculated thresholds
   const threshold2Stars = targetBlocks * 0.43; // Slightly adjusted
   const threshold3Stars = targetBlocks * 0.72; // Slightly adjusted
@@ -395,11 +419,11 @@ export const interpolateBlockPosition = (
   const absDistance = Math.abs(distance);
   const normalizedDelta = deltaTime * 0.05988; // Pre-calculated 1/16.67
   const moveAmount = speed * normalizedDelta;
-  
+
   if (absDistance <= moveAmount) {
     return targetX;
   }
-  
+
   return currentX + (distance > 0 ? moveAmount : -moveAmount);
 };
 
@@ -468,7 +492,7 @@ export const prewarmCaches = (): void => {
       getBlockColors(i, themeId);
     }
   });
-  
+
   // Pre-calculate common speed values with ENHANCED FORMULA
   const commonModes: GameMode[] = ['classic', 'timeAttack', 'challenge'];
   commonModes.forEach(mode => {
@@ -479,20 +503,20 @@ export const prewarmCaches = (): void => {
         const baseSpeed = INITIAL_SPEED * SPEED_MULTIPLIER_BASE;
         const incrementalSpeed = level * (SPEED_INCREMENT * SPEED_INCREMENT_MULTIPLIER);
         const exponentialBoost = Math.pow(1 + LEVEL_SPEED_BOOST, Math.min(level, 25));
-        
+
         let speed = Math.min(
           (baseSpeed + incrementalSpeed) * exponentialBoost,
           MAX_SPEED * MAX_SPEED_MULTIPLIER
         );
-        
+
         if (mode === 'timeAttack') speed *= 1.35;
         if (mode === 'challenge') speed *= 1.28;
-        
+
         // Additional progressive boost
         if (level > 10) {
           speed *= 1 + ((level - 10) * 0.08);
         }
-        
+
         speedCache.set(cacheKey, speed);
       }
     }
