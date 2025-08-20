@@ -580,9 +580,16 @@ export default function LeaderboardScreen() {
                     {/* Score Info */}
                     <View style={styles.scoreInfo}>
                       <View style={styles.scoreHeader}>
-                        <Text style={styles.scoreValue}>
-                          {score.score.toLocaleString()}
-                        </Text>
+                        <View style={{ flexDirection: "column" }} >
+                          <Text style={styles.scoreValue}>
+                            {score.score.toLocaleString()}
+                          </Text>
+                          {score.mode === 'challenge' && score.level && (
+                            <Text style={styles.challengeLevelText}>
+                              {CHALLENGE_LEVELS.find(l => l.id === score.level)?.name || `Level ${score.level}`}
+                            </Text>
+                          )}
+                        </View>
                         <View style={styles.scoreChips}>
                           <View style={styles.modeChip}>
                             <LinearGradient
@@ -601,7 +608,7 @@ export default function LeaderboardScreen() {
                               )}
                             </LinearGradient>
                           </View>
-                          
+
                           {/* Difficulty Chip */}
                           <View style={styles.difficultyChipSmall}>
                             <LinearGradient
@@ -621,12 +628,6 @@ export default function LeaderboardScreen() {
                         <View style={styles.scoreDetail}>
                           <Text style={styles.scoreBlocks}>
                             {score.blocks} blocks
-                            {score.mode === 'challenge' && score.level && (
-                              <Text style={styles.challengeLevelText}>
-                                {' • '}
-                                {CHALLENGE_LEVELS.find(l => l.id === score.level)?.name || `Level ${score.level}`}
-                              </Text>
-                            )}
                           </Text>
                         </View>
                         <Text style={styles.scoreDate}>
@@ -986,7 +987,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   scoreValue: {
     fontSize: 28,
@@ -1060,9 +1061,11 @@ const styles = StyleSheet.create({
     color: PREMIUM_COLORS.textSecondary,
   },
   challengeLevelText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: PREMIUM_COLORS.textTertiary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: PREMIUM_COLORS.bronze,
+    textAlign: "center",
+    opacity: 0.9
   },
   scoreDate: {
     fontSize: 12,

@@ -675,6 +675,7 @@ export const THEME_UI_COLORS = {
   },
 } as const;
 
+// Theme for blocks and background
 export const THEMES: Theme[] = [
   {
     id: 'default',

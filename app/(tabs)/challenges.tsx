@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Lock, Trophy, Award, Play, X } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ChallengeLevel } from '@/types/game';
 import { CHALLENGE_LEVELS } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
@@ -58,6 +58,17 @@ export default function ChallengesScreen() {
   const [selectedLevel, setSelectedLevel] = useState<ChallengeLevel | null>(null);
 
   const currentUnlockedLevel = getCurrentUnlockedLevel();
+
+  // Auto-close modal when user navigates away from this screen
+  useFocusEffect(
+    useCallback(() => {
+      // This runs when screen comes into focus
+      return () => {
+        // This runs when screen loses focus (user navigates away)
+        setSelectedLevel(null);
+      };
+    }, [])
+  );
 
   const handleLevelSelect = (level: ChallengeLevel) => {
     playSound('button', 0.6);
