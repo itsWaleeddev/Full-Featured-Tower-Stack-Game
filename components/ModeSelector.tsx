@@ -16,6 +16,7 @@ import { Infinity, Clock, Target, Lock, Palette, Coins, Settings, Zap, Trophy, S
 import { GameMode, GameModeConfig } from '../types/game';
 import { GAME_MODES, THEMES } from '../constants/game';
 import { useSound } from '@/contexts/SoundContext';
+import { lightenColor } from '../utils/colorUtils';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IS_ANDROID = Platform.OS === 'android';
@@ -261,13 +262,21 @@ const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
     cardOverlay: themeId === 'diamond' || themeId === 'arctic'
       ? 'rgba(0, 0, 0, 0.15)'
       : 'rgba(255, 255, 255, 0.15)',
+    selectionDot: themeId === 'arctic' ? '#00e5ff' : themeId === 'diamond' ? '#c0c0c0' : "#fff",
     textPrimary: themeId === 'diamond' || themeId === 'arctic' ? '#333' : '#fff',
-    textSecondary: themeId === 'diamond' || themeId === 'arctic' ? '#666' : '#ccc',
-    accent: theme.blockColors[0][0],
-    glowColor: themeId === 'neon' ? '#00ffff' :
-      themeId === 'volcanic' ? '#ff4500' :
-        themeId === 'galaxy' ? '#9370db' :
-          themeId === 'golden' ? '#ffd700' : theme.blockColors[0][0],
+    textSecondary: themeId === 'diamond' || themeId === 'arctic' ? '#666' : themeId === 'golden' ? '#e6e6e6' : '#dadada',
+    accent: themeId === 'default' ? '#FF8C52' :
+      themeId === 'diamond' ? '#c0c0c0' :
+        theme.blockColors[0][0],
+    glowColor: themeId === 'default' ? '#FF6B6B' :
+      themeId === 'neon' ? '#00ffff' :
+        themeId === 'volcanic' ? '#dc143c' :
+          themeId === 'galaxy' ? '#673ab7' :
+            themeId === 'golden' ? '#daa520' :
+              themeId === 'rainbow' ? '#00FF00' :
+                themeId === 'arctic' ? '#00e5ff' :
+                  themeId === 'ocean' ? '#0083b0' :
+                    themeId === 'diamond' ? '#c0c0c0' : theme.blockColors[0][0],
   };
 }, []);
 
@@ -350,38 +359,47 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
           <View style={styles.topBar}>
             <View style={styles.coinsContainer}>
               <LinearGradient
-                colors={['rgba(255, 215, 0, 0.4)', 'rgba(255, 215, 0, 0.15)']}
+                colors={[
+                  '#FFF7C0', // soft highlight
+                  '#FFD700', // bright gold
+                  '#C99700', // deep gold
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={[
                   styles.coinsDisplay,
-                  currentTheme === 'neon' && styles.neonGlow,
+                  currentTheme === 'neon' && styles.neonGlowCoin,
                 ]}
               >
-                <Coins size={24} color="#FFD700" />
+                <Coins size={30} color="#FFD700" stroke="#B8860B" strokeWidth={2} />
+
                 <Text style={styles.coinsText}>{coins.toLocaleString()}</Text>
-                {currentTheme === 'neon' && (
-                  <View style={[styles.glowEffect, { shadowColor: '#FFD700' }]} />
-                )}
+
+                {/* Shine overlay for extra polish */}
+                <View
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      borderRadius: 28,
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    },
+                  ]}
+                />
               </LinearGradient>
             </View>
 
             <View style={styles.topRightButtons}>
               <TouchableOpacity onPress={onThemePress} style={styles.settingsButton}>
                 <LinearGradient
-                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']}
+                  colors={[
+                    lightenColor(themeStyles.accent, 80), // solid lighter shade
+                    lightenColor(themeStyles.accent, 50), // subtle gradient
+                  ]}
                   style={styles.settingsGradient}
                 >
-                  <Palette size={24} color={themeStyles.textPrimary} />
+                  <Palette size={30} color={themeStyles.glowColor} strokeWidth={3} />
                 </LinearGradient>
               </TouchableOpacity>
-
-              {/* <TouchableOpacity style={styles.settingsButton}>
-                <LinearGradient
-                  colors={[themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']}
-                  style={styles.settingsGradient}
-                >
-                  <Trophy size={24} color={themeStyles.accent} />
-                </LinearGradient>
-              </TouchableOpacity> */}
             </View>
           </View>
         )}
@@ -560,15 +578,14 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                         {mode.unlocked ? mode.description : 'Locked - Coming Soon!'}
                       </Text>
                     </View>
-
                     {/* Enhanced Selection Indicator */}
                     {isSelected && (
                       <View style={styles.selectionIndicator}>
                         <LinearGradient
-                          colors={['#fff', 'rgba(255, 255, 255, 0.7)']}
+                          colors={[themeStyles.selectionDot, 'rgba(255, 255, 255, 0.7)']}
                           style={styles.selectionDot}
                         />
-                        <Zap size={14} color="#fff" style={styles.selectionIcon} />
+                        <Zap size={14} color={themeStyles.textPrimary} style={styles.selectionIcon} />
                       </View>
                     )}
                   </View>
@@ -670,7 +687,7 @@ const styles = StyleSheet.create({
   },
   mainMenuContainer: {
     flex: 1,
-    paddingTop: 35,  //60
+    paddingTop: 30,  //60
     paddingHorizontal: 15, //20
     paddingBottom: 20, //40
   },
@@ -709,28 +726,36 @@ const styles = StyleSheet.create({
   coinsDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 28,
     alignSelf: 'flex-start',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.8,
+    shadowRadius: 14,
+    elevation: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 215, 0, 0.6)'
   },
   coinsText: {
-    color: '#FFD700',
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '900',
-    marginLeft: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    marginLeft: 8,
+    color: '#FFF8DC', // creamy gold-like white
+    textShadowColor: 'rgba(0, 0, 0, 0.55)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
+  neonGlowCoin: {
+    shadowColor: '#FFD700',
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 24,
+  },
   topRightButtons: {
     flexDirection: 'row',
-    gap: 10, //14
+    gap: 10,
   },
   settingsButton: {
     borderRadius: 24,
@@ -751,7 +776,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 10, //40
     zIndex: 10,
-    paddingTop: 25
+    paddingTop: 40
   },
   blockStackContainer: {
     alignItems: 'center',
