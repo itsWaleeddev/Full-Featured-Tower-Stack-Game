@@ -47,8 +47,8 @@ const CuteSun: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo
     width: 6, // Uniform width for simplicity
   })), []);
 
-  const sunCenterX = SCREEN_WIDTH * 0.8; // Moved to right side
-  const sunCenterY = SCREEN_HEIGHT * 0.15;
+  const sunCenterX = SCREEN_WIDTH * 0.50; // Moved to right side
+  const sunCenterY = SCREEN_HEIGHT * 0.40;
 
   // Main sun animation - gentle bobbing
   const sunAnimatedStyle = useAnimatedStyle(() => {
@@ -1231,8 +1231,8 @@ const styles = StyleSheet.create({
     height: 120,
     backgroundColor: '#FFD700',
     borderRadius: 60,
-    top: SCREEN_HEIGHT * 0.10,
-    left: SCREEN_WIDTH * 0.66, // Moved to right with margin
+    top: SCREEN_HEIGHT * 0.35,
+    left: SCREEN_WIDTH * 0.35, // Moved to right with margin
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FFD700',

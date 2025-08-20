@@ -267,7 +267,8 @@ const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
     textSecondary: themeId === 'diamond' || themeId === 'arctic' ? '#666' : themeId === 'golden' ? '#e6e6e6' : '#dadada',
     accent: themeId === 'default' ? '#FF8C52' :
       themeId === 'diamond' ? '#c0c0c0' :
-        theme.blockColors[0][0],
+        themeId === 'sunset' ? '#ff7e5f' :
+          theme.blockColors[0][0],
     glowColor: themeId === 'default' ? '#FF6B6B' :
       themeId === 'neon' ? '#00ffff' :
         themeId === 'volcanic' ? '#dc143c' :
@@ -522,8 +523,10 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                       : mode.unlocked
                         ? (
                           currentTheme === 'rainbow'
-                            ? ['#ff9999', 'rgba(255, 0, 0, 0.4)']
-                            : [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']
+                            ? ['#feb47b', 'rgba(255, 0, 0, 0.4)'] :
+                            currentTheme === 'sunset'
+                              ? ['#e68d5e', '#c96b5d']
+                              : [themeStyles.cardOverlay, 'rgba(255, 255, 255, 0.08)']
                         )
                         : ['rgba(100, 100, 100, 0.2)', 'rgba(60, 60, 60, 0.2)']
                   }
