@@ -783,12 +783,12 @@ export default function StackTowerGame() {
           onClose={handleCloseModals}
         />
 
-        <DailyChallengeModal
+        {/* <DailyChallengeModal
           visible={showDailyChallenge}
           challenge={dailyChallenge}
           onAccept={handleDailyChallengeAccept}
           onClose={handleCloseModals}
-        />
+        /> */}
       </View>
     </TouchableWithoutFeedback>
   );
