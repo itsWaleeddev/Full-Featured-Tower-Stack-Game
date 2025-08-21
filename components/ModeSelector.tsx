@@ -541,22 +541,14 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                   <View style={styles.modeCardContent}>
                     <View style={[
                       styles.modeIconContainer,
-                      isSelected && styles.selectedIconContainer,
+                      isSelected && styles.selectedModeIconContainer,
                     ]}>
                       {mode.unlocked ? (
-                        <>
-                          <ModeIcon
-                            mode={mode.id}
-                            size={32}
-                            color={isSelected ? '#fff' : themeStyles.textPrimary}
-                          />
-                          {isSelected && (
-                            <View style={[
-                              styles.iconGlow,
-                              { backgroundColor: themeStyles.glowColor }
-                            ]} />
-                          )}
-                        </>
+                        <ModeIcon
+                          mode={mode.id}
+                          size={32}
+                          color={isSelected ? '#fff' : themeStyles.textPrimary}
+                        />
                       ) : (
                         <Lock size={32} color="#666" />
                       )}
@@ -917,15 +909,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  selectedIconContainer: {
-    transform: [{ scale: 1.15 }],
-  },
-  iconGlow: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    opacity: 0.25,
+  selectedModeIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 25,
+    padding: 8,
   },
   modeInfo: {
     flex: 1,

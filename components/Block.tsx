@@ -73,21 +73,21 @@ const KawaiiRectangle: React.FC<{
   expression: Expression;
   glowAnimation: Animated.SharedValue<number>;
 }> = ({ width, height, colors, borderColor, borderWidth, themeId, blockType, expression, glowAnimation }) => {
-  
+
   // Face element calculations
   const eyeSize = Math.min(width * 0.08, height * 0.12, 8);
   const eyeOffsetX = width * 0.28;
   const eyeY = height * 0.35;
-  
+
   // Eyes positions
   const leftEyeX = width * 0.5 - eyeOffsetX;
   const rightEyeX = width * 0.5 + eyeOffsetX;
-  
+
   // Mouth calculations
   const mouthY = height * 0.65;
   const mouthWidth = width * 0.25;
   const mouthX = (width - mouthWidth) / 2;
-  
+
   // Blush calculations
   const blushSize = Math.min(width * 0.12, height * 0.08, 10);
   const blushY = height * 0.55;
@@ -106,7 +106,7 @@ const KawaiiRectangle: React.FC<{
       default: return '#000000';
     }
   }, [themeId]);
-  
+
   const blushColor = useMemo(() => {
     switch (themeId) {
       case 'neon': return '#ff1493';
@@ -121,11 +121,16 @@ const KawaiiRectangle: React.FC<{
 
   const mouthColor = useMemo(() => {
     switch (themeId) {
-      case 'neon': 
+      case 'neon':
         // Purple lips only for specific pink colors
         const isPinkBlock = colors[0] === '#ff0080' || colors[0] === '#ff0040';
         return isPinkBlock ? '#8000ff' : '#ff1493';
-      case 'volcanic': return '#dc143c';
+      case 'volcanic':
+        // Use darker mouth color for better contrast on red block colors
+        const isRedBlock = colors[0] === '#dc143c' || colors[0] === '#ff1493' ||
+          colors[0] === '#b22222' || colors[0] === '#8b0000' ||
+          colors[0] === '#ff0000';
+        return isRedBlock ? '#4a0e0e' : '#dc143c';
       case 'golden': return '#b8860b';
       case 'galaxy': return '#4b0082';
       case 'diamond': return '#696969';
@@ -171,19 +176,19 @@ const KawaiiRectangle: React.FC<{
             <Circle cx={rightEyeX + eyeSize * 0.5} cy={eyeY + eyeSize * 0.7} r={1.5} fill="#FFA500" opacity={0.6} />
           </>
         );
-      
+
       case 'diamond':
         return (
           <>
             {baseEyes}
             {/* Diamond crystal sparkles */}
-            <Path d={`M ${leftEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.8} L ${leftEyeX + eyeSize * 0.9} ${eyeY - eyeSize * 0.6} L ${leftEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.4} L ${leftEyeX + eyeSize * 0.5} ${eyeY - eyeSize * 0.6} Z`} 
-                  fill="white" opacity={0.9} />
-            <Path d={`M ${rightEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.8} L ${rightEyeX + eyeSize * 0.9} ${eyeY - eyeSize * 0.6} L ${rightEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.4} L ${rightEyeX + eyeSize * 0.5} ${eyeY - eyeSize * 0.6} Z`} 
-                  fill="white" opacity={0.9} />
+            <Path d={`M ${leftEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.8} L ${leftEyeX + eyeSize * 0.9} ${eyeY - eyeSize * 0.6} L ${leftEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.4} L ${leftEyeX + eyeSize * 0.5} ${eyeY - eyeSize * 0.6} Z`}
+              fill="white" opacity={0.9} />
+            <Path d={`M ${rightEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.8} L ${rightEyeX + eyeSize * 0.9} ${eyeY - eyeSize * 0.6} L ${rightEyeX + eyeSize * 0.7} ${eyeY - eyeSize * 0.4} L ${rightEyeX + eyeSize * 0.5} ${eyeY - eyeSize * 0.6} Z`}
+              fill="white" opacity={0.9} />
           </>
         );
-      
+
       case 'neon':
         return (
           <>
@@ -193,19 +198,19 @@ const KawaiiRectangle: React.FC<{
             <Circle cx={rightEyeX} cy={eyeY} r={eyeSize * 1.3} fill="none" stroke="#00FFFF" strokeWidth={1} opacity={0.6} />
           </>
         );
-      
+
       case 'arctic':
         return (
           <>
             {baseEyes}
             {/* Frost crystals */}
-            <Path d={`M ${leftEyeX + eyeSize * 0.8} ${eyeY - eyeSize * 0.8} L ${leftEyeX + eyeSize * 0.6} ${eyeY - eyeSize * 0.4} M ${leftEyeX + eyeSize * 1.0} ${eyeY - eyeSize * 0.6} L ${leftEyeX + eyeSize * 0.4} ${eyeY - eyeSize * 0.6}`} 
-                  stroke="#B0E0E6" strokeWidth={1.5} opacity={0.7} />
-            <Path d={`M ${rightEyeX + eyeSize * 0.8} ${eyeY - eyeSize * 0.8} L ${rightEyeX + eyeSize * 0.6} ${eyeY - eyeSize * 0.4} M ${rightEyeX + eyeSize * 1.0} ${eyeY - eyeSize * 0.6} L ${rightEyeX + eyeSize * 0.4} ${eyeY - eyeSize * 0.6}`} 
-                  stroke="#B0E0E6" strokeWidth={1.5} opacity={0.7} />
+            <Path d={`M ${leftEyeX + eyeSize * 0.8} ${eyeY - eyeSize * 0.8} L ${leftEyeX + eyeSize * 0.6} ${eyeY - eyeSize * 0.4} M ${leftEyeX + eyeSize * 1.0} ${eyeY - eyeSize * 0.6} L ${leftEyeX + eyeSize * 0.4} ${eyeY - eyeSize * 0.6}`}
+              stroke="#B0E0E6" strokeWidth={1.5} opacity={0.7} />
+            <Path d={`M ${rightEyeX + eyeSize * 0.8} ${eyeY - eyeSize * 0.8} L ${rightEyeX + eyeSize * 0.6} ${eyeY - eyeSize * 0.4} M ${rightEyeX + eyeSize * 1.0} ${eyeY - eyeSize * 0.6} L ${rightEyeX + eyeSize * 0.4} ${eyeY - eyeSize * 0.6}`}
+              stroke="#B0E0E6" strokeWidth={1.5} opacity={0.7} />
           </>
         );
-      
+
       default:
         return (
           <>
@@ -220,7 +225,7 @@ const KawaiiRectangle: React.FC<{
   const getMouthElement = () => {
     return (
       <Path
-        d={`M ${mouthX + mouthWidth * 0.2} ${mouthY} Q ${mouthX + mouthWidth/2} ${mouthY + 6} ${mouthX + mouthWidth * 0.8} ${mouthY}`}
+        d={`M ${mouthX + mouthWidth * 0.2} ${mouthY} Q ${mouthX + mouthWidth / 2} ${mouthY + 6} ${mouthX + mouthWidth * 0.8} ${mouthY}`}
         stroke={mouthColor}
         strokeWidth={themeId === 'diamond' ? 1.5 : 2}
         fill="none"
@@ -244,7 +249,7 @@ const KawaiiRectangle: React.FC<{
             </RadialGradient>
           </Defs>
         );
-      
+
       case 'diamond':
         return (
           <Defs>
@@ -256,7 +261,7 @@ const KawaiiRectangle: React.FC<{
             </RadialGradient>
           </Defs>
         );
-      
+
       default:
         return null;
     }
@@ -271,10 +276,10 @@ const KawaiiRectangle: React.FC<{
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
-      
+
       <Svg width={width} height={height} style={StyleSheet.absoluteFillObject}>
         {getPremiumBackground()}
-        
+
         {/* Premium background fill */}
         {(themeId === 'golden' || themeId === 'diamond') && (
           <Rect
@@ -286,11 +291,11 @@ const KawaiiRectangle: React.FC<{
             rx={6}
           />
         )}
-        
+
         {/* Main rectangle border */}
         <Rect
-          x={borderWidth/2}
-          y={borderWidth/2}
+          x={borderWidth / 2}
+          y={borderWidth / 2}
           width={width - borderWidth}
           height={height - borderWidth}
           fill="transparent"
@@ -298,7 +303,7 @@ const KawaiiRectangle: React.FC<{
           strokeWidth={borderWidth}
           rx={8}
         />
-        
+
         {/* Theme-specific premium effects */}
         {themeId === 'golden' && (
           <>
@@ -307,7 +312,7 @@ const KawaiiRectangle: React.FC<{
             <Path d={`M ${width * 0.1} ${height * 0.67} L ${width * 0.9} ${height * 0.67}`} stroke="rgba(184, 134, 11, 0.4)" strokeWidth={1} />
             <Path d={`M ${width * 0.33} ${height * 0.1} L ${width * 0.33} ${height * 0.33}`} stroke="rgba(184, 134, 11, 0.4)" strokeWidth={1} />
             <Path d={`M ${width * 0.67} ${height * 0.33} L ${width * 0.67} ${height * 0.9}`} stroke="rgba(184, 134, 11, 0.4)" strokeWidth={1} />
-            
+
             {/* Golden glow inner border */}
             <Rect
               x={borderWidth * 2}
@@ -321,45 +326,45 @@ const KawaiiRectangle: React.FC<{
             />
           </>
         )}
-        
+
         {themeId === 'diamond' && (
           <>
             {/* Enhanced diamond facet pattern */}
-            <Path d={`M ${width * 0.5} ${borderWidth * 3} L ${width * 0.15} ${height * 0.5} L ${width * 0.5} ${height - borderWidth * 3} L ${width * 0.85} ${height * 0.5} Z`} 
-                  fill="none" stroke="rgba(255, 255, 255, 0.4)" strokeWidth={1.5} />
+            <Path d={`M ${width * 0.5} ${borderWidth * 3} L ${width * 0.15} ${height * 0.5} L ${width * 0.5} ${height - borderWidth * 3} L ${width * 0.85} ${height * 0.5} Z`}
+              fill="none" stroke="rgba(255, 255, 255, 0.4)" strokeWidth={1.5} />
             <Path d={`M ${width * 0.5} ${borderWidth * 3} L ${width * 0.85} ${height * 0.5}`} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={1} />
             <Path d={`M ${width * 0.5} ${height - borderWidth * 3} L ${width * 0.15} ${height * 0.5}`} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={1} />
             <Path d={`M ${width * 0.15} ${height * 0.5} L ${width * 0.85} ${height * 0.5}`} stroke="rgba(255, 255, 255, 0.25)" strokeWidth={1} />
-            
+
             {/* Additional diamond sparkle lines */}
             <Path d={`M ${width * 0.3} ${height * 0.25} L ${width * 0.7} ${height * 0.75}`} stroke="rgba(255, 255, 255, 0.2)" strokeWidth={0.8} />
             <Path d={`M ${width * 0.7} ${height * 0.25} L ${width * 0.3} ${height * 0.75}`} stroke="rgba(255, 255, 255, 0.2)" strokeWidth={0.8} />
-            
+
             {/* Crystal reflection spots */}
             <Circle cx={width * 0.35} cy={height * 0.35} r={2} fill="rgba(255, 255, 255, 0.6)" />
             <Circle cx={width * 0.65} cy={height * 0.65} r={1.5} fill="rgba(255, 255, 255, 0.5)" />
             <Circle cx={width * 0.25} cy={height * 0.6} r={1} fill="rgba(255, 255, 255, 0.4)" />
           </>
         )}
-        
+
         {/* Neon theme - no inner lines, glow handled by outer shadow */}
-        
+
         {themeId === 'arctic' && (
           <>
             {/* Snow crystal patterns */}
             <Circle cx={width * 0.8} cy={height * 0.2} r={3} fill="rgba(255, 255, 255, 0.4)" />
             <Circle cx={width * 0.2} cy={height * 0.8} r={2.5} fill="rgba(255, 255, 255, 0.3)" />
-            <Path d={`M ${width * 0.75} ${height * 0.15} L ${width * 0.85} ${height * 0.25} M ${width * 0.85} ${height * 0.15} L ${width * 0.75} ${height * 0.25}`} 
-                  stroke="rgba(255, 255, 255, 0.5)" strokeWidth={1} />
+            <Path d={`M ${width * 0.75} ${height * 0.15} L ${width * 0.85} ${height * 0.25} M ${width * 0.85} ${height * 0.15} L ${width * 0.75} ${height * 0.25}`}
+              stroke="rgba(255, 255, 255, 0.5)" strokeWidth={1} />
           </>
         )}
-        
+
         {/* Eyes */}
         {getEyeElements()}
-        
+
         {/* Mouth */}
         {getMouthElement()}
-        
+
         {/* Enhanced blush circles */}
         <Circle
           cx={leftBlushX}
@@ -375,7 +380,7 @@ const KawaiiRectangle: React.FC<{
           fill={blushColor}
           opacity={themeId === 'diamond' ? 0.6 : 0.8}
         />
-        
+
         {/* Block type specific effects */}
         {blockType === 'slippery' && (
           <>
@@ -384,23 +389,23 @@ const KawaiiRectangle: React.FC<{
             <Circle cx={width * 0.9} cy={height * 0.2} r={1} fill="rgba(135, 206, 235, 0.6)" />
           </>
         )}
-        
+
         {blockType === 'heavy' && (
           <>
-            <Path d={`M ${width * 0.05} ${height * 0.2} L ${width * 0.15} ${height * 0.15} L ${width * 0.1} ${height * 0.25} Z`} 
-                  fill={borderColor} opacity={0.4} />
-            <Path d={`M ${width * 0.9} ${height * 0.2} L ${width * 0.95} ${height * 0.15} L ${width * 0.85} ${height * 0.25} Z`} 
-                  fill={borderColor} opacity={0.4} />
+            <Path d={`M ${width * 0.05} ${height * 0.2} L ${width * 0.15} ${height * 0.15} L ${width * 0.1} ${height * 0.25} Z`}
+              fill={borderColor} opacity={0.4} />
+            <Path d={`M ${width * 0.9} ${height * 0.2} L ${width * 0.95} ${height * 0.15} L ${width * 0.85} ${height * 0.25} Z`}
+              fill={borderColor} opacity={0.4} />
           </>
         )}
       </Svg>
-      
+
       {/* Enhanced overlay effects */}
       {(themeId === 'diamond' || themeId === 'golden') && (
         <View style={[StyleSheet.absoluteFillObject, styles.shineOverlay, { borderRadius: 8 }]}>
           <LinearGradient
             colors={
-              themeId === 'golden' 
+              themeId === 'golden'
                 ? ['rgba(255, 255, 255, 0.3)', 'transparent', 'rgba(255, 215, 0, 0.2)']
                 : ['rgba(255, 255, 255, 0.4)', 'transparent', 'rgba(255, 255, 255, 0.2)']
             }
@@ -414,14 +419,14 @@ const KawaiiRectangle: React.FC<{
   );
 };
 
-const BlockComponent: React.FC<BlockProps> = ({ 
-  block, 
-  isDropping = false, 
-  themeId = 'default' 
+const BlockComponent: React.FC<BlockProps> = ({
+  block,
+  isDropping = false,
+  themeId = 'default'
 }) => {
   const colorIndex = block.id === 'base' ? 0 : parseInt(block.id.split('-')[1] || '0') % 8;
   const [startColor, endColor] = getBlockColors(colorIndex, themeId);
-  
+
   // Get consistent expression for this block
   const expression = useMemo(() => getExpressionForBlock(block.id), [block.id]);
 
@@ -468,11 +473,11 @@ const BlockComponent: React.FC<BlockProps> = ({
   React.useEffect(() => {
     if (isDropping) {
       blockScale.value = withSpring(1.03, { damping: 30, stiffness: 600, mass: 0.5 });
-      
+
       const timer = setTimeout(() => {
         blockScale.value = withSpring(1, { damping: 30, stiffness: 600, mass: 0.5 });
       }, 80); // Reduced from 120ms
-      
+
       return () => clearTimeout(timer);
     }
   }, [isDropping]);
@@ -480,7 +485,7 @@ const BlockComponent: React.FC<BlockProps> = ({
   // Ultra-optimized animated style - minimal calculations
   const animatedStyle = useAnimatedStyle(() => {
     const baseOpacity = block.type === 'slippery' ? 0.88 : 1;
-    
+
     // Only neon and diamond get dynamic effects for performance
     if (themeId === 'neon') {
       return {
@@ -496,7 +501,7 @@ const BlockComponent: React.FC<BlockProps> = ({
         shadowRadius: 15 + (glowAnimation.value * 5),
       };
     }
-    
+
     if (themeId === 'diamond') {
       return {
         transform: [
@@ -511,7 +516,7 @@ const BlockComponent: React.FC<BlockProps> = ({
         shadowRadius: 12 + (glowAnimation.value * 4),
       };
     }
-    
+
     // Static style for other themes - no glow calculations
     return {
       transform: [
@@ -530,11 +535,11 @@ const BlockComponent: React.FC<BlockProps> = ({
   // Enhanced style calculations
   const borderColor = useMemo(() => getOptimizedBorderColor(block.type, themeId), [block.type, themeId]);
   const borderWidth = useMemo(() => getOptimizedBorderWidth(block.type, themeId), [block.type, themeId]);
-  
+
   // Enhanced shadow color with glow support for neon theme
   const shadowColor = useMemo(() => {
     switch (themeId) {
-      case 'neon': 
+      case 'neon':
         // Use block color for glow effect
         return startColor;
       case 'volcanic': return '#ff4500';
