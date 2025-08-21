@@ -268,7 +268,8 @@ const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
     accent: themeId === 'default' ? '#FF8C52' :
       themeId === 'diamond' ? '#c0c0c0' :
         themeId === 'sunset' ? '#ff7e5f' :
-          theme.blockColors[0][0],
+          themeId === 'forest' ? '#32cd32' :
+            theme.blockColors[0][0],
     glowColor: themeId === 'default' ? '#FF6B6B' :
       themeId === 'neon' ? '#00ffff' :
         themeId === 'volcanic' ? '#dc143c' :
@@ -570,12 +571,12 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                         ]}>
                           {mode.name}
                         </Text>
-                        {mode.unlocked && index === 0 && (
+                        {/* {mode.unlocked && index === 0 && (
                           <View style={styles.popularBadge}>
                             <Star size={10} color="#FFD700" />
                             <Text style={styles.popularText}>HOT</Text>
                           </View>
-                        )}
+                        )} */}
                       </View>
                       <Text style={[
                         styles.modeDescription,
@@ -781,7 +782,7 @@ const styles = StyleSheet.create({
   // Title Section with Tower - REORGANIZED
   titleSection: {
     alignItems: 'center',
-    paddingBottom: 10, //40
+    paddingBottom: 2, //40
     zIndex: 10,
     paddingTop: 40
   },

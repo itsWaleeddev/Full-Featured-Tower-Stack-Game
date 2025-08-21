@@ -446,7 +446,7 @@ const Snowflakes: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
 
 // Trees component
 const Trees: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  const trees = Array.from({ length: 5 }, (_, i) => ({ id: i, x: (i * SCREEN_WIDTH) / 4 }));
+  const trees = Array.from({ length: 5 }, (_, i) => ({ id: i, x: (i * SCREEN_WIDTH) / 4.2 }));
 
   return (
     <>
@@ -1083,9 +1083,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 15,
     height: 80,
-    backgroundColor: '#2d5016',
+    backgroundColor:'#2d5016',
+    //backgroundColor: '#2d5016',
     borderRadius: 7,
-    bottom: SCREEN_HEIGHT * 0.2,
+    bottom: SCREEN_HEIGHT * 0.46,
   },
   // Realistic fire flames
   fireFlame: {
