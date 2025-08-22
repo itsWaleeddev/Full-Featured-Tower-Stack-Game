@@ -1,12 +1,12 @@
-import React from 'react';
-import { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
   useSharedValue,
 } from 'react-native-reanimated';
+import React from 'react';
+import { memo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Pause } from 'lucide-react-native';
 
 interface GameUIProps {

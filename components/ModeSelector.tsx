@@ -1,7 +1,3 @@
-import React, { useEffect, useState } from 'react';
-import { memo, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -12,6 +8,10 @@ import Animated, {
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { memo, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Infinity, Clock, Target, Lock, Palette, Coins, Settings, Zap, Trophy, Star, Gamepad2 } from 'lucide-react-native';
 import { GameMode, GameModeConfig } from '../types/game';
 import { GAME_MODES, THEMES } from '../constants/game';

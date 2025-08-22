@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Coins, Target } from 'lucide-react-native';
 import { DailyChallenge } from '../types/game';

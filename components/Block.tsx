@@ -1,6 +1,3 @@
-import React from 'react';
-import { memo, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -11,6 +8,9 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
+import React from 'react';
+import { memo, useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle, Defs, RadialGradient, Stop, Filter, FeGaussianBlur, FeMorphology, FeColorMatrix } from 'react-native-svg';
 import { Block as BlockType } from '../types/game';

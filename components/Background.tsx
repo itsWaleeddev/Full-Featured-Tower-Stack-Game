@@ -1,6 +1,3 @@
-import React, { memo, useEffect, useMemo } from 'react';
-import { StyleSheet, Dimensions, View } from 'react-native';
-import { Platform } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -11,6 +8,9 @@ import Animated, {
   Extrapolate,
   cancelAnimation,
 } from 'react-native-reanimated';
+import React, { memo, useEffect, useMemo } from 'react';
+import { StyleSheet, Dimensions, View } from 'react-native';
+import { Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getBackgroundColors } from '../utils/gameLogic';
 

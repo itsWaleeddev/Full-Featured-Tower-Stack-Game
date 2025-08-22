@@ -1,5 +1,21 @@
 import { Tabs } from 'expo-router';
 import { Gamepad2, Store, Target, Trophy, Settings } from 'lucide-react-native';
+import { View } from 'react-native';
+
+function TabBarIcon({ Icon, color, size, focused }: any) {
+  return (
+    <View
+      style={{
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 6,
+        borderRadius: 12,
+        backgroundColor: focused ? 'rgba(102, 126, 234, 0.15)' : 'transparent',
+      }}>
+      <Icon size={size} color={color} />
+    </View>
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -17,8 +33,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Stack Tower',
-          tabBarIcon: ({ size, color }) => (
-            <Gamepad2 size={size} color={color} />
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabBarIcon Icon={Gamepad2} size={size} color={color} focused={focused} />
           ),
         }}
       />
@@ -26,8 +42,8 @@ export default function TabLayout() {
         name="challenges"
         options={{
           title: 'Challenges',
-          tabBarIcon: ({ size, color }) => (
-            <Target size={size} color={color} />
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabBarIcon Icon={Target} size={size} color={color} focused={focused} />
           ),
         }}
       />
@@ -35,8 +51,8 @@ export default function TabLayout() {
         name="leaderboard"
         options={{
           title: 'Leaderboard',
-          tabBarIcon: ({ size, color }) => (
-            <Trophy size={size} color={color} />
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabBarIcon Icon={Trophy} size={size} color={color} focused={focused} />
           ),
         }}
       />
@@ -44,8 +60,8 @@ export default function TabLayout() {
         name="shop"
         options={{
           title: 'Shop',
-          tabBarIcon: ({ size, color }) => (
-            <Store size={size} color={color} />
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabBarIcon Icon={Store} size={size} color={color} focused={focused} />
           ),
         }}
       />
@@ -53,8 +69,8 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ size, color }) => (
-            <Settings size={size} color={color} />
+          tabBarIcon: ({ size, color, focused }) => (
+            <TabBarIcon Icon={Settings} size={size} color={color} focused={focused} />
           ),
         }}
       />

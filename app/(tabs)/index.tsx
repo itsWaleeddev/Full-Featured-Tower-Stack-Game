@@ -1,7 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { View, StyleSheet, TouchableWithoutFeedback } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -10,6 +6,10 @@ import Animated, {
   cancelAnimation,
   Easing
 } from 'react-native-reanimated';
+import React, { useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import { View, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Background } from '../../components/Background';
 import { Block } from '../../components/Block';
 import { GameUI } from '../../components/GameUI';

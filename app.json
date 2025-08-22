@@ -25,8 +25,6 @@
       "typedRoutes": true
     },
     "android": {
-      "hardwareAccelerated": true,
-      "largeHeap": true,
       "package": "com.waleedwaris01.boltexponativewind"
     }
   }
