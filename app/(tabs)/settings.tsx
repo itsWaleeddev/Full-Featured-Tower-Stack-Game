@@ -4,9 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Settings, Volume2, VolumeX, Trash2, Info, Target, Zap, Shield, CircleHelp as HelpCircle } from 'lucide-react-native';
 import { useTheme } from '@/contexts/GameContext';
 import { useSound } from '@/contexts/SoundContext';
-import { Background } from '@/components/Background';
 import { clearAllData } from '@/utils/storage';
-import { Audio } from "expo-av";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

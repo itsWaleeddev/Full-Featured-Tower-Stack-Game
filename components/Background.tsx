@@ -26,7 +26,7 @@ interface BackgroundProps {
 const createParticles = (count: number, themeId: string) => {
   // Android optimization: Reduce particle count
   const adjustedCount = IS_ANDROID ? Math.floor(count * 0.6) : count;
-  return Array.from({ length: count }, (_, i) => ({
+  return Array.from({ length: adjustedCount }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
     y: Math.random() * SCREEN_HEIGHT,
@@ -38,7 +38,10 @@ const createParticles = (count: number, themeId: string) => {
 };
 
 // Enhanced Cute Cartoon Sun component like the image
-const CuteSun: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
+const CuteSun: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
   // Create simple sun rays - fewer rays, more cartoon-like
   const sunRays = useMemo(() => Array.from({ length: 16 }, (_, i) => ({
     id: i,
@@ -67,8 +70,9 @@ const CuteSun: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo
 
     return {
       transform: [{ translateY: bobbing }, { scale }],
+      opacity: isVisible ? 1 : 0,
     };
-  }, []);
+  }, [isVisible]);
 
   // Sun rays animation - gentle rotation
   const raysAnimatedStyle = useAnimatedStyle(() => {
@@ -81,8 +85,9 @@ const CuteSun: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo
 
     return {
       transform: [{ rotate: `${rotate}deg` }],
+      opacity: isVisible ? 1 : 0,
     };
-  }, []);
+  }, [isVisible]);
 
   // Face animation - blinking effect
   const faceAnimatedStyle = useAnimatedStyle(() => {
@@ -244,7 +249,10 @@ const Particle: React.FC<{
 });
 
 // Enhanced Rainbow arc component - smaller, more beautiful and animated
-const RainbowArc: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
+const RainbowArc: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
   const rainbowLayers = useMemo(() => [
     { color: '#ff0000', radius: 0.8, opacity: 0.9 },    // Red - outermost
     { color: '#ff7f00', radius: 0.72, opacity: 0.85 },   // Orange
@@ -275,10 +283,10 @@ const RainbowArc: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
       Extrapolate.CLAMP
     );
     return {
-      opacity,
+      opacity: isVisible ? opacity : 0,
       transform: [{ scale }, { translateY }],
     };
-  }, []);
+  }, [isVisible]);
 
   return (
     <Animated.View style={[styles.rainbowContainer, animatedStyle]}>
@@ -327,13 +335,16 @@ const RainbowArc: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
 });
 
 // Ocean waves component - taller and slower water flow
-const OceanWaves: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  const waves = Array.from({ length: 6 }, (_, i) => ({
+const OceanWaves: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const waves = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     id: i,
     delay: i * 0.15,
     baseHeight: 200 + i * 120,
     maxHeight: SCREEN_HEIGHT * 0.85 // Almost full screen height
-  }));
+  })), []);
 
   return (
     <>
@@ -362,9 +373,9 @@ const OceanWaves: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
           return {
             transform: [{ translateY }],
             height,
-            opacity,
+            opacity: isVisible ? opacity : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View
@@ -384,14 +395,16 @@ const OceanWaves: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
 });
 
 // Snowflakes component
-const Snowflakes: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  // Always create snowflakes array - moved outside to avoid conditional hooks
-  const snowflakes = Array.from({ length: 15 }, (_, i) => ({
+const Snowflakes: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const snowflakes = useMemo(() => Array.from({ length: 15 }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
     size: Math.random() * 4 + 2,
     speed: Math.random() * 0.5 + 0.5,
-  }));
+  })), []);
 
   return (
     <>
@@ -421,9 +434,9 @@ const Snowflakes: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
               { translateY: translateY * flake.speed },
               { translateX: translateX + flake.x },
             ],
-            opacity,
+            opacity: isVisible ? opacity : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View
@@ -445,8 +458,14 @@ const Snowflakes: React.FC<{ animationValue: Animated.SharedValue<number> }> = m
 });
 
 // Trees component
-const Trees: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  const trees = Array.from({ length: 5 }, (_, i) => ({ id: i, x: (i * SCREEN_WIDTH) / 4.2 }));
+const Trees: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const trees = useMemo(() => Array.from({ length: 5 }, (_, i) => ({
+    id: i,
+    x: (i * SCREEN_WIDTH) / 4.2
+  })), []);
 
   return (
     <>
@@ -461,8 +480,9 @@ const Trees: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo((
 
           return {
             transform: [{ translateX: sway + tree.x }, { rotate: `${sway * 0.5}deg` }],
+            opacity: isVisible ? 1 : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View
@@ -476,15 +496,17 @@ const Trees: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo((
 });
 
 // Realistic fire flames component
-const RealisticFires: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  // Always create fires array - moved outside to avoid conditional hooks
-  const fires = Array.from({ length: 12 }, (_, i) => ({
+const RealisticFires: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const fires = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
     size: Math.random() * 25 + 20,
     delay: Math.random(),
     speed: Math.random() * 0.3 + 0.7,
-  }));
+  })), []);
 
   return (
     <>
@@ -534,9 +556,9 @@ const RealisticFires: React.FC<{ animationValue: Animated.SharedValue<number> }>
               { scaleX },
               { scaleY },
             ],
-            opacity,
+            opacity: isVisible ? opacity : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View key={fire.id} style={[animatedStyle]}>
@@ -564,13 +586,15 @@ const RealisticFires: React.FC<{ animationValue: Animated.SharedValue<number> }>
 });
 
 // Neon streams component
-const NeonStreams: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  // Always create streams array - moved outside to avoid conditional hooks
-  const streams = Array.from({ length: 6 }, (_, i) => ({
+const NeonStreams: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const streams = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     id: i,
     x: (i * SCREEN_WIDTH) / 5,
     color: ['#ff0080', '#00ff80', '#8000ff', '#ff8000', '#0080ff', '#ff0040'][i],
-  }));
+  })), []);
 
   return (
     <>
@@ -591,9 +615,9 @@ const NeonStreams: React.FC<{ animationValue: Animated.SharedValue<number> }> = 
 
           return {
             transform: [{ translateY }],
-            opacity,
+            opacity: isVisible ? opacity : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View
@@ -615,15 +639,17 @@ const NeonStreams: React.FC<{ animationValue: Animated.SharedValue<number> }> = 
 });
 
 // Classic floating circles component
-const FloatingCircles: React.FC<{ animationValue: Animated.SharedValue<number> }> = memo(({ animationValue }) => {
-  // Always create circles array - moved outside to avoid conditional hooks
-  const circles = Array.from({ length: 8 }, (_, i) => ({
+const FloatingCircles: React.FC<{
+  animationValue: Animated.SharedValue<number>;
+  isVisible: boolean;
+}> = memo(({ animationValue, isVisible }) => {
+  const circles = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
     y: Math.random() * SCREEN_HEIGHT,
     size: Math.random() * 30 + 20,
     delay: i * 0.2,
-  }));
+  })), []);
 
   return (
     <>
@@ -653,9 +679,9 @@ const FloatingCircles: React.FC<{ animationValue: Animated.SharedValue<number> }
               { translateY: translateY + circle.y },
               { translateX: translateX + circle.x },
             ],
-            opacity,
+            opacity: isVisible ? opacity : 0,
           };
-        });
+        }, [isVisible]);
 
         return (
           <Animated.View
@@ -676,16 +702,21 @@ const FloatingCircles: React.FC<{ animationValue: Animated.SharedValue<number> }
   );
 });
 
-const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId = 'default' }) => {
-  const [startColor, endColor] = useMemo(() => getBackgroundColors(themeId), [themeId]);
-  const opacity = useSharedValue(1);
 
-  // Always create all animation values regardless of theme
+const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId = 'default' }) => {
+  // ✅ ALL HOOKS MUST BE AT THE VERY TOP - NO EARLY RETURNS OR CONDITIONS BEFORE THIS POINT
+
+  // 1. useMemo hook - ALWAYS called first
+  const [startColor, endColor] = useMemo(() => getBackgroundColors(themeId), [themeId]);
+
+  // 2. useSharedValue hooks - ALWAYS called, no conditions whatsoever
+  const opacity = useSharedValue(1);
   const animationValue = useSharedValue(0);
   const rotationValue = useSharedValue(0);
   const pulseValue = useSharedValue(1);
   const waveValue = useSharedValue(0);
 
+  // 3. useMemo hook - ALWAYS called
   const particles = useMemo(() => {
     // Android optimization: Significantly reduce particles
     let particleCount = themeId === 'galaxy' ? 50 : themeId === 'arctic' ? 30 : 20;
@@ -695,6 +726,73 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
     return createParticles(particleCount, themeId);
   }, [themeId]);
 
+  // 4. useAnimatedStyle hooks - ALL MUST BE CALLED UNCONDITIONALLY
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }), []);
+
+  const galaxyStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotationValue.value}deg` }],
+    opacity: themeId === 'galaxy' ? 0.3 : 0,
+  }), [themeId]);
+
+  const neonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseValue.value }],
+    opacity: themeId === 'neon' ? 0.4 : 0,
+  }), [themeId]);
+
+  const volcanicStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseValue.value }],
+    opacity: themeId === 'volcanic' ? 0.6 : 0,
+  }), [themeId]);
+
+  const oceanStyle = useAnimatedStyle(() => {
+    const wave1 = interpolate(
+      waveValue.value,
+      [0, 0.5, 1],
+      [0, 20, 0],
+      Extrapolate.CLAMP
+    );
+    return {
+      transform: [{ translateY: wave1 }],
+      opacity: themeId === 'ocean' ? 0.3 : 0,
+    };
+  }, [themeId]);
+
+  const sunsetStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotationValue.value * 0.5}deg` }],
+    opacity: themeId === 'sunset' ? 0.4 : 0,
+  }), [themeId]);
+
+  const forestStyle = useAnimatedStyle(() => {
+    const sway = interpolate(
+      waveValue.value,
+      [-1, 0, 1],
+      [-5, 0, 5],
+      Extrapolate.CLAMP
+    );
+    return {
+      transform: [{ translateX: sway }],
+      opacity: themeId === 'forest' ? 0.3 : 0,
+    };
+  }, [themeId]);
+
+  const rainbowStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotationValue.value}deg` }],
+    opacity: themeId === 'rainbow' ? 0.5 : 0,
+  }), [themeId]);
+
+  const goldenStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseValue.value }],
+    opacity: themeId === 'golden' ? 0.4 : 0,
+  }), [themeId]);
+
+  const diamondStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseValue.value }],
+    opacity: themeId === 'diamond' ? 0.3 : 0,
+  }), [themeId]);
+
+  // 5. useEffect hooks - MUST BE CALLED UNCONDITIONALLY
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 300 });
   }, [themeId]);
@@ -846,78 +944,13 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
     }
   }, [themeId]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }), []);
-
-  // Always create all animated styles regardless of theme
-  const galaxyStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationValue.value}deg` }],
-    opacity: themeId === 'galaxy' ? 0.3 : 0,
-  }));
-
-  const neonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseValue.value }],
-    opacity: themeId === 'neon' ? 0.4 : 0,
-  }));
-
-  const volcanicStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseValue.value }],
-    opacity: themeId === 'volcanic' ? 0.6 : 0,
-  }));
-
-  const oceanStyle = useAnimatedStyle(() => {
-    const wave1 = interpolate(
-      waveValue.value,
-      [0, 0.5, 1],
-      [0, 20, 0],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [{ translateY: wave1 }],
-      opacity: themeId === 'ocean' ? 0.3 : 0,
-    };
-  });
-
-  const sunsetStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationValue.value * 0.5}deg` }],
-    opacity: themeId === 'sunset' ? 0.4 : 0,
-  }));
-
-  const forestStyle = useAnimatedStyle(() => {
-    const sway = interpolate(
-      waveValue.value,
-      [-1, 0, 1],
-      [-5, 0, 5],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [{ translateX: sway }],
-      opacity: themeId === 'forest' ? 0.3 : 0,
-    };
-  });
-
-  const rainbowStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationValue.value}deg` }],
-    opacity: themeId === 'rainbow' ? 0.5 : 0,
-  }));
-
-  const goldenStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseValue.value }],
-    opacity: themeId === 'golden' ? 0.4 : 0,
-  }));
-
-  const diamondStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseValue.value }],
-    opacity: themeId === 'diamond' ? 0.3 : 0,
-  }));
-
-  // Render particles only for themes that need them
-  // Android optimization: Reduce particle themes
-  const shouldShowParticles = IS_ANDROID 
+  // ✅ ALL HOOKS DECLARED ABOVE THIS LINE - CONDITIONAL LOGIC STARTS HERE
+  // Calculate conditional values AFTER all hooks are declared
+  const shouldShowParticles = IS_ANDROID
     ? ['galaxy'].includes(themeId) // Only galaxy particles on Android
     : ['galaxy', 'arctic', 'neon'].includes(themeId);
 
+  // ✅ Safe to return JSX - all hooks have been called
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <LinearGradient
@@ -927,15 +960,15 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Theme-specific animations */}
-      {themeId === 'rainbow' && <RainbowArc animationValue={animationValue} />}
-      {themeId === 'ocean' && <OceanWaves animationValue={animationValue} />}
-      {themeId === 'arctic' && <Snowflakes animationValue={animationValue} />}
-      {themeId === 'sunset' && <CuteSun animationValue={animationValue} />}
-      {themeId === 'forest' && <Trees animationValue={waveValue} />}
-      {themeId === 'volcanic' && <RealisticFires animationValue={animationValue} />}
-      {themeId === 'neon' && <NeonStreams animationValue={animationValue} />}
-      {themeId === 'default' && <FloatingCircles animationValue={animationValue} />}
+      {/* Theme-specific animations - ALWAYS render but control visibility through props */}
+      <RainbowArc animationValue={animationValue} isVisible={themeId === 'rainbow'} />
+      <OceanWaves animationValue={animationValue} isVisible={themeId === 'ocean'} />
+      <Snowflakes animationValue={animationValue} isVisible={themeId === 'arctic'} />
+      <CuteSun animationValue={animationValue} isVisible={themeId === 'sunset'} />
+      <Trees animationValue={waveValue} isVisible={themeId === 'forest'} />
+      <RealisticFires animationValue={animationValue} isVisible={themeId === 'volcanic'} />
+      <NeonStreams animationValue={animationValue} isVisible={themeId === 'neon'} />
+      <FloatingCircles animationValue={animationValue} isVisible={themeId === 'default'} />
 
       {/* Particles */}
       {shouldShowParticles && particles.map((particle) => (
@@ -947,7 +980,7 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
         />
       ))}
 
-      {/* Original theme-specific elements */}
+      {/* Original theme-specific elements - always render but control visibility */}
       <Animated.View style={[styles.galaxyNebula, galaxyStyle]} />
       <Animated.View style={[styles.neonGlow, neonStyle]} />
       <Animated.View style={[styles.volcanicEmbers, volcanicStyle]} />
@@ -1083,7 +1116,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 15,
     height: 80,
-    backgroundColor:'#2d5016',
+    backgroundColor: '#2d5016',
     //backgroundColor: '#2d5016',
     borderRadius: 7,
     bottom: SCREEN_HEIGHT * 0.46,

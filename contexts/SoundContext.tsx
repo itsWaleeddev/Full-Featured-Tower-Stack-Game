@@ -115,6 +115,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [soundState.soundEnabled]);
 
   // Load all sounds on mount
+  // Load all sounds on mount - FIXED VERSION
   useEffect(() => {
     let isMounted = true;
 
@@ -137,7 +138,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               source,
               {
                 shouldPlay: false,
-                volume: soundState.volume,
+                volume: 0.7, // ✅ Use fixed initial volume
                 rate: 1.0,
                 shouldCorrectPitch: true,
               }
@@ -170,7 +171,26 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       isMounted = false;
     };
-  }, [soundState.volume]);
+  }, []); // ✅ Remove soundState.volume dependency - only run once on mount
+
+  // ✅ Add separate effect to update volume of already loaded sounds
+  useEffect(() => {
+    const updateSoundVolumes = async () => {
+      if (!isInitializedRef.current) return;
+
+      const volumePromises = Object.values(soundsRef.current).map(async (sound) => {
+        try {
+          await sound.setVolumeAsync(soundState.volume);
+        } catch (error) {
+          console.warn('Failed to update sound volume:', error);
+        }
+      });
+
+      await Promise.allSettled(volumePromises);
+    };
+
+    updateSoundVolumes();
+  }, [soundState.volume]); // ✅ Separate effect for volume changes
 
   // Handle app state changes to manage audio properly
   useEffect(() => {
@@ -303,7 +323,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // if (enabled) {
     //   playSound('button', 0.7, true);
     // }
-    
+
   };
 
   return (
