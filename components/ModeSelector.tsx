@@ -152,107 +152,121 @@ const AnimatedBlock = ({
 // Memoized AnimatedBlock to prevent unnecessary re-renders
 const MemoizedAnimatedBlock = memo(AnimatedBlock);
 
+// ✅ FIXED: Individual Particle Component declared OUTSIDE of loops
+const ParticleComponent = memo(({
+  particleId,
+  themeId = 'default'
+}: {
+  particleId: number;
+  themeId?: string;
+}) => {
+  const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.5);
+
+  // ✅ Stable initial position based on particleId (no random in render)
+  const initialLeft = useMemo(() => Math.random() * SCREEN_WIDTH, []);
+  const isSpecialParticle = useMemo(() => particleId % 6 === 0, [particleId]);
+
+  useEffect(() => {
+    const startAnimation = () => {
+      translateY.value = SCREEN_HEIGHT + 50;
+      translateX.value = 0;
+      opacity.value = 0;
+      scale.value = 0.5;
+
+      // Android optimization: Slower, less frequent animations
+      const baseDuration = IS_ANDROID ? 10000 : 8000;
+      const randomDuration = IS_ANDROID ? 2000 : 4000;
+      const delayRange = IS_ANDROID ? 6000 : 4000;
+
+      translateY.value = withDelay(
+        Math.random() * delayRange,
+        withTiming(-100, { duration: baseDuration + Math.random() * randomDuration })
+      );
+
+      translateX.value = withDelay(
+        Math.random() * delayRange,
+        withTiming((Math.random() - 0.5) * 100, { duration: baseDuration + Math.random() * randomDuration })
+      );
+
+      opacity.value = withDelay(
+        Math.random() * delayRange,
+        withSequence(
+          withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: 1000 }),
+          withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: IS_ANDROID ? 8000 : 6000 }),
+          withTiming(0, { duration: 1000 })
+        )
+      );
+
+      scale.value = withDelay(
+        Math.random() * delayRange,
+        withTiming(1 + Math.random() * 0.3, { duration: 1500 })
+      );
+
+      setTimeout(startAnimation, baseDuration + Math.random() * randomDuration);
+    };
+
+    startAnimation();
+  }, []); // ✅ No dependencies on themeId to avoid recreation
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { translateX: translateX.value },
+      { scale: scale.value }
+    ],
+    opacity: opacity.value,
+  }));
+
+  const particleColor = useMemo(() => {
+    switch (themeId) {
+      case 'neon': return '#00ffff';
+      case 'volcanic': return '#ff4500';
+      case 'galaxy': return '#9370db';
+      case 'golden': return '#ffd700';
+      case 'diamond': return '#e0e0e0';
+      default: return '#ffffff';
+    }
+  }, [themeId]);
+
+  return (
+    <Animated.View
+      style={[
+        isSpecialParticle ? styles.specialParticle : styles.particle,
+        {
+          left: initialLeft,
+          backgroundColor: particleColor,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+});
+
 // Enhanced Floating Particles Component
 const FloatingParticles = memo(({ themeId = 'default' }: { themeId?: string }) => {
   // Android optimization: Significantly reduce particles
   const particleCount = IS_ANDROID ? 6 : 12;
-  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => i), []);
+  const particles = useMemo(() => Array.from({ length: particleCount }, (_, i) => i), [particleCount]);
 
   return (
     <View style={styles.particlesContainer}>
-      {particles.map((particle) => {
-        const ParticleComponent = () => {
-          const translateY = useSharedValue(0);
-          const translateX = useSharedValue(0);
-          const opacity = useSharedValue(0);
-          const scale = useSharedValue(0.5);
-
-          useEffect(() => {
-            const startAnimation = () => {
-              translateY.value = SCREEN_HEIGHT + 50;
-              translateX.value = 0;
-              opacity.value = 0;
-              scale.value = 0.5;
-
-              // Android optimization: Slower, less frequent animations
-              const baseDuration = IS_ANDROID ? 10000 : 8000;
-              const randomDuration = IS_ANDROID ? 2000 : 4000;
-              const delayRange = IS_ANDROID ? 6000 : 4000;
-
-              translateY.value = withDelay(
-                Math.random() * delayRange,
-                withTiming(-100, { duration: baseDuration + Math.random() * randomDuration })
-              );
-
-              translateX.value = withDelay(
-                Math.random() * delayRange,
-                withTiming((Math.random() - 0.5) * 100, { duration: baseDuration + Math.random() * randomDuration })
-              );
-
-              opacity.value = withDelay(
-                Math.random() * delayRange,
-                withSequence(
-                  withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: 1000 }),
-                  withTiming(IS_ANDROID ? 0.5 : 0.7, { duration: IS_ANDROID ? 8000 : 6000 }),
-                  withTiming(0, { duration: 1000 })
-                )
-              );
-
-              scale.value = withDelay(
-                Math.random() * delayRange,
-                withTiming(1 + Math.random() * 0.3, { duration: 1500 })
-              );
-
-              setTimeout(startAnimation, baseDuration + Math.random() * randomDuration);
-            };
-
-            startAnimation();
-          }, []);
-
-          const animatedStyle = useAnimatedStyle(() => ({
-            transform: [
-              { translateY: translateY.value },
-              { translateX: translateX.value },
-              { scale: scale.value }
-            ],
-            opacity: opacity.value,
-          }));
-
-          const getParticleColor = () => {
-            switch (themeId) {
-              case 'neon': return '#00ffff';
-              case 'volcanic': return '#ff4500';
-              case 'galaxy': return '#9370db';
-              case 'golden': return '#ffd700';
-              case 'diamond': return '#e0e0e0';
-              default: return '#ffffff';
-            }
-          };
-
-          const isSpecialParticle = particle % 6 === 0;
-
-          return (
-            <Animated.View
-              style={[
-                isSpecialParticle ? styles.specialParticle : styles.particle,
-                {
-                  left: Math.random() * SCREEN_WIDTH,
-                  backgroundColor: getParticleColor(),
-                },
-                animatedStyle,
-              ]}
-            />
-          );
-        };
-
-        return <ParticleComponent key={particle} />;
-      })}
+      {particles.map((particleId) => (
+        <ParticleComponent
+          key={particleId}
+          particleId={particleId}
+          themeId={themeId}
+        />
+      ))}
     </View>
   );
 });
 
 // Memoize theme styles calculation
-const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
+// ✅ Plain helper function, no hooks here
+const getThemeStyles = (themeId: string = 'default') => {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   const [primaryColor, secondaryColor] = theme.backgroundColors;
 
@@ -262,25 +276,49 @@ const getThemeStyles = useMemo(() => (themeId: string = 'default') => {
     cardOverlay: themeId === 'diamond' || themeId === 'arctic'
       ? 'rgba(0, 0, 0, 0.15)'
       : 'rgba(255, 255, 255, 0.15)',
-    selectionDot: themeId === 'arctic' ? '#00e5ff' : themeId === 'diamond' ? '#c0c0c0' : "#fff",
+    selectionDot: themeId === 'arctic'
+      ? '#00e5ff'
+      : themeId === 'diamond'
+        ? '#c0c0c0'
+        : "#fff",
     textPrimary: themeId === 'diamond' || themeId === 'arctic' ? '#333' : '#fff',
-    textSecondary: themeId === 'diamond' || themeId === 'arctic' ? '#666' : themeId === 'golden' ? '#e6e6e6' : '#dadada',
-    accent: themeId === 'default' ? '#FF8C52' :
-      themeId === 'diamond' ? '#c0c0c0' :
-        themeId === 'sunset' ? '#ff7e5f' :
-          themeId === 'forest' ? '#32cd32' :
-            theme.blockColors[0][0],
-    glowColor: themeId === 'default' ? '#FF6B6B' :
-      themeId === 'neon' ? '#00ffff' :
-        themeId === 'volcanic' ? '#dc143c' :
-          themeId === 'galaxy' ? '#673ab7' :
-            themeId === 'golden' ? '#daa520' :
-              themeId === 'rainbow' ? '#ffff00' :
-                themeId === 'arctic' ? '#00e5ff' :
-                  themeId === 'ocean' ? '#0083b0' :
-                    themeId === 'diamond' ? '#c0c0c0' : theme.blockColors[0][0],
+    textSecondary:
+      themeId === 'diamond' || themeId === 'arctic'
+        ? '#666'
+        : themeId === 'golden'
+          ? '#e6e6e6'
+          : '#dadada',
+    accent: themeId === 'default'
+      ? '#FF8C52'
+      : themeId === 'diamond'
+        ? '#c0c0c0'
+        : themeId === 'sunset'
+          ? '#ff7e5f'
+          : themeId === 'forest'
+            ? '#32cd32'
+            : theme.blockColors[0][0],
+    glowColor: themeId === 'default'
+      ? '#FF6B6B'
+      : themeId === 'neon'
+        ? '#00ffff'
+        : themeId === 'volcanic'
+          ? '#dc143c'
+          : themeId === 'galaxy'
+            ? '#673ab7'
+            : themeId === 'golden'
+              ? '#daa520'
+              : themeId === 'rainbow'
+                ? '#ffff00'
+                : themeId === 'arctic'
+                  ? '#00e5ff'
+                  : themeId === 'ocean'
+                    ? '#0083b0'
+                    : themeId === 'diamond'
+                      ? '#c0c0c0'
+                      : theme.blockColors[0][0],
   };
-}, []);
+};
+
 
 const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
   selectedMode,
@@ -293,15 +331,22 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
   setSelectedMode,
   currentTheme = 'default'
 }) => {
+  // ✅ CRITICAL FIX: All hooks MUST be called before any conditional returns
   const [titleScale] = useState(useSharedValue(0));
   const [stackOffset] = useState(useSharedValue(50));
   const [gamepadGlow] = useState(useSharedValue(0));
   const { playSound, soundEnabled, toggleSound } = useSound();
 
-  if (!visible) return null;
+  // ✅ Get theme-appropriate block colors for the tower display
+  const blockColors = useMemo(() => {
+    const currentThemeData = THEMES.find(t => t.id === currentTheme) || THEMES[0];
+    return currentThemeData.blockColors;
+  }, [currentTheme]);
+
+  const themeStyles = getThemeStyles(currentTheme);
 
   useEffect(() => {
-    if (showAsMainMenu) {
+    if (showAsMainMenu && visible) {
       // Android optimization: Faster, simpler animations
       const titleDelay = IS_ANDROID ? 200 : 300;
       const stackDelay = IS_ANDROID ? 400 : 600;
@@ -325,17 +370,7 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
         true
       );
     }
-  }, [showAsMainMenu]);
-
-  const containerStyle = showAsMainMenu ? styles.mainMenuContainer : styles.modalContainer;
-  const overlayStyle = showAsMainMenu ? styles.mainMenuOverlay : styles.modalOverlay;
-  const themeStyles = getThemeStyles(currentTheme);
-
-  // Get theme-appropriate block colors for the tower display
-  const blockColors = useMemo(() => {
-    const currentThemeData = THEMES.find(t => t.id === currentTheme) || THEMES[0];
-    return currentThemeData.blockColors;
-  }, [currentTheme]);
+  }, [showAsMainMenu, visible]); // ✅ Added 'visible' to dependencies
 
   const titleAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: titleScale.value }],
@@ -349,6 +384,12 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
     opacity: gamepadGlow.value * 0.8 + 0.2,
     transform: [{ scale: 0.9 + gamepadGlow.value * 0.1 }],
   }));
+
+  // ✅ CRITICAL FIX: Move the early return AFTER all hooks have been called
+  if (!visible) return null;
+
+  const containerStyle = showAsMainMenu ? styles.mainMenuContainer : styles.modalContainer;
+  const overlayStyle = showAsMainMenu ? styles.mainMenuOverlay : styles.modalOverlay;
 
   return (
     <View style={overlayStyle}>
@@ -414,8 +455,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
               <MemoizedAnimatedBlock
                 width={120} // Slightly smaller on Android
                 height={31}
-                //width={IS_ANDROID ? 110 : 120} // Slightly smaller on Android
-                //height={IS_ANDROID ? 28 : 31}
                 x={0}
                 y={0}
                 colors={blockColors[0]}
@@ -427,10 +466,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 height={31}
                 x={7.5}
                 y={-28}
-                // width={IS_ANDROID ? 95 : 105}
-                // height={IS_ANDROID ? 28 : 31}
-                // x={IS_ANDROID ? 7.5 : 7.5}
-                // y={IS_ANDROID ? -25 : -28}
                 colors={blockColors[1]}
                 delay={IS_ANDROID ? 800 : 1000}
                 themeId={currentTheme}
@@ -440,10 +475,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 height={31}
                 x={-2.5}
                 y={-56}
-                // width={IS_ANDROID ? 115 : 125}
-                // height={IS_ANDROID ? 28 : 31}
-                // x={IS_ANDROID ? -2.5 : -2.5}
-                // y={IS_ANDROID ? -50 : -56}
                 colors={blockColors[2]}
                 delay={IS_ANDROID ? 1000 : 1200}
                 themeId={currentTheme}
@@ -453,10 +484,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 height={31}
                 x={12.5}
                 y={-84}
-                // width={IS_ANDROID ? 85 : 95}
-                // height={IS_ANDROID ? 28 : 31}
-                // x={IS_ANDROID ? 12.5 : 12.5}
-                // y={IS_ANDROID ? -75 : -84}
                 colors={blockColors[3]}
                 delay={IS_ANDROID ? 1200 : 1400}
                 themeId={currentTheme}
@@ -563,12 +590,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                         ]}>
                           {mode.name}
                         </Text>
-                        {/* {mode.unlocked && index === 0 && (
-                          <View style={styles.popularBadge}>
-                            <Star size={10} color="#FFD700" />
-                            <Text style={styles.popularText}>HOT</Text>
-                          </View>
-                        )} */}
                       </View>
                       <Text style={[
                         styles.modeDescription,
@@ -616,11 +637,6 @@ const ModeSelectorComponent: React.FC<ModeSelectorProps> = ({
                 end={{ x: 1, y: 1 }}
               >
                 <View style={styles.startButtonContent}>
-                  {/* {selectedMode && (
-                    <Animated.View style={[styles.gamepadIcon, gamepadAnimatedStyle]}>
-                      <Gamepad2 size={22} color="#fff" />
-                    </Animated.View>
-                  )} */}
                   <Text style={[styles.startButtonText, selectedMode && styles.activeStartText]}>
                     {selectedMode ? 'START GAME' : 'SELECT A MODE'}
                   </Text>
@@ -687,9 +703,9 @@ const styles = StyleSheet.create({
   },
   mainMenuContainer: {
     flex: 1,
-    paddingTop: 30,  //60
-    paddingHorizontal: 15, //20
-    paddingBottom: 20, //40
+    paddingTop: 30,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
   },
 
   // Enhanced Particles
@@ -742,7 +758,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     marginLeft: 8,
-    color: '#FFF8DC', // creamy gold-like white
+    color: '#FFF8DC',
     textShadowColor: 'rgba(0, 0, 0, 0.55)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -771,17 +787,17 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
 
-  // Title Section with Tower - REORGANIZED
+  // Title Section with Tower
   titleSection: {
     alignItems: 'center',
-    paddingBottom: 2, //40
+    paddingBottom: 2,
     zIndex: 10,
     paddingTop: 40
   },
   blockStackContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20, // Space between tower and text
+    marginBottom: 20,
     marginTop: 30
   },
   titleContainer: {
@@ -873,11 +889,11 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   modesContent: {
-    gap: 12, // Reduced gap
+    gap: 12,
     paddingBottom: 20,
   },
   modeCard: {
-    borderRadius: 16, // Slightly smaller radius
+    borderRadius: 16,
     overflow: 'hidden',
   },
   selectedModeCard: {
@@ -891,7 +907,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   modeCardGradient: {
-    paddingVertical: 16, // Reduced padding
+    paddingVertical: 16,
     paddingHorizontal: 18,
   },
   neonModeCard: {
@@ -904,8 +920,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   modeIconContainer: {
-    marginRight: 16, // Reduced margin
-    width: 48, // Smaller icon container
+    marginRight: 16,
+    width: 48,
     alignItems: 'center',
     position: 'relative',
   },
@@ -920,10 +936,10 @@ const styles = StyleSheet.create({
   modeNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4, // Reduced margin
+    marginBottom: 4,
   },
   modeName: {
-    fontSize: 18, // Smaller font
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -943,12 +959,12 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   modeDescription: {
-    fontSize: 13, // Smaller font
+    fontSize: 13,
     lineHeight: 18,
     fontWeight: '500',
   },
   selectionIndicator: {
-    width: 28, // Smaller indicator
+    width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
@@ -970,7 +986,7 @@ const styles = StyleSheet.create({
 
   // Enhanced Start Button with Gaming Elements
   startSection: {
-    marginTop: 5, //25
+    marginTop: 5,
     zIndex: 10,
   },
   startButton: {

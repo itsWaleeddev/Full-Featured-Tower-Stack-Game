@@ -22,11 +22,12 @@ interface BackgroundProps {
   themeId?: string;
 }
 
-// Optimized particle system for different themes
-const createParticles = (count: number, themeId: string) => {
-  // Android optimization: Reduce particle count
-  const adjustedCount = IS_ANDROID ? Math.floor(count * 0.6) : count;
-  return Array.from({ length: adjustedCount }, (_, i) => ({
+// Fixed maximum particle count to ensure consistent hook calls
+const MAX_PARTICLES = IS_ANDROID ? 20 : 50;
+
+// Optimized particle system with fixed count
+const createParticles = (themeId: string) => {
+  return Array.from({ length: MAX_PARTICLES }, (_, i) => ({
     id: i,
     x: Math.random() * SCREEN_WIDTH,
     y: Math.random() * SCREEN_HEIGHT,
@@ -34,7 +35,28 @@ const createParticles = (count: number, themeId: string) => {
     speed: Math.random() * 2 + 1,
     opacity: Math.random() * 0.8 + 0.2,
     delay: Math.random() * 2000,
+    // Add theme-specific properties
+    active: shouldParticleBeActive(i, themeId),
   }));
+};
+
+// Determine if a particle should be active based on theme
+const shouldParticleBeActive = (index: number, themeId: string): boolean => {
+  let activeCount = 0;
+  switch (themeId) {
+    case 'galaxy':
+      activeCount = IS_ANDROID ? 20 : 50;
+      break;
+    case 'arctic':
+      activeCount = IS_ANDROID ? 12 : 30;
+      break;
+    case 'neon':
+      activeCount = IS_ANDROID ? 8 : 20;
+      break;
+    default:
+      activeCount = 0;
+  }
+  return index < activeCount;
 };
 
 // Enhanced Cute Cartoon Sun component like the image
@@ -159,7 +181,7 @@ const CuteSun: React.FC<{
   );
 });
 
-// Individual particle component for better performance
+// Individual particle component with consistent hooks
 const Particle: React.FC<{
   particle: any;
   themeId: string;
@@ -180,10 +202,11 @@ const Particle: React.FC<{
       Extrapolate.CLAMP
     );
 
+    // Use particle.active to control visibility instead of conditional rendering
     const opacity = interpolate(
       animationValue.value,
       [0, 0.1, 0.9, 1],
-      [0, particle.opacity, particle.opacity, 0],
+      [0, particle.active ? particle.opacity : 0, particle.active ? particle.opacity : 0, 0],
       Extrapolate.CLAMP
     );
 
@@ -194,7 +217,7 @@ const Particle: React.FC<{
       ],
       opacity,
     };
-  }, [particle.opacity, particle.x, particle.y]);
+  }, [particle.opacity, particle.x, particle.y, particle.active]);
 
   const getParticleStyle = useMemo(() => {
     switch (themeId) {
@@ -702,7 +725,6 @@ const FloatingCircles: React.FC<{
   );
 });
 
-
 const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId = 'default' }) => {
   // ✅ ALL HOOKS MUST BE AT THE VERY TOP - NO EARLY RETURNS OR CONDITIONS BEFORE THIS POINT
 
@@ -716,14 +738,9 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
   const pulseValue = useSharedValue(1);
   const waveValue = useSharedValue(0);
 
-  // 3. useMemo hook - ALWAYS called
+  // 3. useMemo hook - ALWAYS called with FIXED particle count
   const particles = useMemo(() => {
-    // Android optimization: Significantly reduce particles
-    let particleCount = themeId === 'galaxy' ? 50 : themeId === 'arctic' ? 30 : 20;
-    if (IS_ANDROID) {
-      particleCount = Math.floor(particleCount * 0.4); // 60% reduction for Android
-    }
-    return createParticles(particleCount, themeId);
+    return createParticles(themeId);
   }, [themeId]);
 
   // 4. useAnimatedStyle hooks - ALL MUST BE CALLED UNCONDITIONALLY
@@ -945,10 +962,8 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
   }, [themeId]);
 
   // ✅ ALL HOOKS DECLARED ABOVE THIS LINE - CONDITIONAL LOGIC STARTS HERE
-  // Calculate conditional values AFTER all hooks are declared
-  const shouldShowParticles = IS_ANDROID
-    ? ['galaxy'].includes(themeId) // Only galaxy particles on Android
-    : ['galaxy', 'arctic', 'neon'].includes(themeId);
+  // Determine which themes should show particles
+  const shouldShowParticles = ['galaxy', 'arctic', 'neon'].includes(themeId);
 
   // ✅ Safe to return JSX - all hooks have been called
   return (
@@ -970,8 +985,8 @@ const BackgroundComponent: React.FC<BackgroundProps> = ({ towerHeight, themeId =
       <NeonStreams animationValue={animationValue} isVisible={themeId === 'neon'} />
       <FloatingCircles animationValue={animationValue} isVisible={themeId === 'default'} />
 
-      {/* Particles */}
-      {shouldShowParticles && particles.map((particle) => (
+      {/* Fixed particle count - ALWAYS render MAX_PARTICLES regardless of theme */}
+      {particles.map((particle) => (
         <Particle
           key={particle.id}
           particle={particle}

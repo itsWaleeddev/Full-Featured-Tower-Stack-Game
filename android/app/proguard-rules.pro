@@ -11,16 +11,4 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
-# Keep React Navigation classes
--keep class com.swmansion.rnscreens.** { *; }
--keep class com.swmansion.reanimated.** { *; }
--keep class com.facebook.react.turbomodule.** { *; }
--keep class com.facebook.jni.** { *; }
-
-# Keep expo-router
--keep class expo.modules.** { *; }
-
-# Prevent stripping of annotations
--keepattributes *Annotation*
-
 # Add any project specific keep options here:
