@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, Alert, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Settings, Volume2, VolumeX, Trash2, Info, Target, Zap, Shield, CircleHelp as HelpCircle } from 'lucide-react-native';
@@ -48,6 +48,13 @@ export default function SettingsScreen() {
   const { themeState, updateThemeState, setDifficulty } = useTheme();
   const [isResetting, setIsResetting] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>('medium');
+
+  // Sync local state with global state on mount
+  useEffect(() => {
+    if (themeState?.selectedDifficulty) {
+      setSelectedDifficulty(themeState.selectedDifficulty as DifficultyLevel);
+    }
+  }, [themeState?.selectedDifficulty]);
 
   const difficultyOptions: DifficultyOption[] = [
     {
@@ -106,6 +113,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             setIsResetting(true);
             try {
+              setDifficulty('medium');
               setSelectedDifficulty('medium');
               await clearAllData();
 
@@ -469,7 +477,7 @@ const styles = StyleSheet.create({
   settingActions: {
     marginTop: 16,
     paddingTop: 16,
-    flex:1,
+    flex: 1,
     borderTopWidth: 1,
     borderTopColor: PREMIUM_COLORS.border,
   },
@@ -539,12 +547,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     alignSelf: 'center',
-    justifyContent:"center"
+    justifyContent: "center"
   },
   dangerButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:"center",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,

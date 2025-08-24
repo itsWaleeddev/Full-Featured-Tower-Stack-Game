@@ -1,6 +1,7 @@
 import { Dimensions } from 'react-native';
 import { Platform } from 'react-native';
 import { GameModeConfig, ChallengeLevel, Theme } from '../types/game';
+import { Background } from '@/components/Background';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -129,7 +130,8 @@ export const HIGH_SPEED_CONFIG = {
 export const COLORS = {
   themes: {
     default: {
-      background: ['#667eea', '#764ba2'] as const,
+      //background: ['#667eea', '#764ba2'] as const,
+      background : ['#0a0a0a', '#1a1a1a'] as const,
       blocks: [
         ['#FF6B6B', '#FF8E8E'] as const,
         ['#4ECDC4', '#6FE3DC'] as const,
