@@ -12,7 +12,7 @@ import React from 'react';
 import { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Rect, Circle, Defs, RadialGradient, Stop, Filter, FeGaussianBlur, FeMorphology, FeColorMatrix } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, Defs, RadialGradient, Stop, LinearGradient as SVGLinearGradient, Filter, FeGaussianBlur, FeMorphology, FeColorMatrix } from 'react-native-svg';
 import { Block as BlockType } from '../types/game';
 import { getBlockColors } from '../utils/gameLogic';
 
@@ -73,6 +73,9 @@ const KawaiiRectangle: React.FC<{
   expression: Expression;
   glowAnimation: Animated.SharedValue<number>;
 }> = ({ width, height, colors, borderColor, borderWidth, themeId, blockType, expression, glowAnimation }) => {
+
+  //const [layoutReady, setLayoutReady] = React.useState(false);
+
 
   // Face element calculations
   const eyeSize = Math.min(width * 0.08, height * 0.12, 8);
@@ -235,13 +238,16 @@ const KawaiiRectangle: React.FC<{
     );
   };
 
+
   // Premium background gradients
   const getPremiumBackground = () => {
+    if (width <= 0 || height <= 0) return null;
+
     switch (themeId) {
-      case 'golden':
+      case "golden":
         return (
           <Defs>
-            <RadialGradient id="goldenGrad" cx="50%" cy="30%" r="70%">
+            <RadialGradient id="goldenGrad" cx="50%" cy="30%" r='70%'>
               <Stop offset="0%" stopColor="#FFD700" stopOpacity={0.9} />
               <Stop offset="30%" stopColor={colors[0]} stopOpacity={1} />
               <Stop offset="70%" stopColor={colors[1]} stopOpacity={1} />
@@ -250,10 +256,10 @@ const KawaiiRectangle: React.FC<{
           </Defs>
         );
 
-      case 'diamond':
+      case "diamond":
         return (
           <Defs>
-            <RadialGradient id="diamondGrad" cx="30%" cy="30%" r="80%">
+            <RadialGradient id="diamondGrad" cx="30%" cy="30%" r='80%'>
               <Stop offset="0%" stopColor="rgba(255,255,255,0.9)" stopOpacity={1} />
               <Stop offset="40%" stopColor={colors[0]} stopOpacity={0.95} />
               <Stop offset="80%" stopColor={colors[1]} stopOpacity={1} />
@@ -267,8 +273,11 @@ const KawaiiRectangle: React.FC<{
     }
   };
 
+
+
   return (
-    <View style={styles.rectangleContainer}>
+    <View style={styles.rectangleContainer}
+    >
       {/* Enhanced background gradient */}
       <LinearGradient
         colors={[colors[0], colors[1]]}
@@ -399,6 +408,7 @@ const KawaiiRectangle: React.FC<{
           </>
         )}
       </Svg>
+
 
       {/* Enhanced overlay effects */}
       {(themeId === 'diamond' || themeId === 'golden') && (
