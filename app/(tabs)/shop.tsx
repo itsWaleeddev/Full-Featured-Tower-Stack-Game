@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag, Store } from 'lucide-react-native';
+import { Coins, Lock, Check, Star, Crown, Zap, Gift, ShoppingBag, Store, AlertCircle, X, Gamepad2, Trophy } from 'lucide-react-native';
 import { Theme } from '@/types/game';
 import { THEMES } from '@/constants/game';
 import { useTheme } from '@/contexts/GameContext';
@@ -9,7 +9,120 @@ import { useSound } from '@/contexts/SoundContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const getRarityColor = (rarity: string) => {
+interface InsufficientCoinsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  requiredCoins: number;
+  currentCoins: number;
+  themeName: string;
+}
+
+const InsufficientCoinsModal: React.FC<InsufficientCoinsModalProps> = React.memo(({
+  visible,
+  onClose,
+  requiredCoins,
+  currentCoins,
+  themeName
+}) => {
+  const coinsNeeded = useMemo(() => requiredCoins - currentCoins, [requiredCoins, currentCoins]);
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <LinearGradient
+            colors={['rgba(255, 59, 48, 0.1)', 'rgba(255, 59, 48, 0.05)']}
+            style={styles.modalBackground}
+          />
+          
+          {/* Close Button */}
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={onClose}
+          >
+            <X size={20} color="#fff" />
+          </TouchableOpacity>
+          
+          {/* Alert Icon */}
+          <View style={styles.alertIconContainer}>
+            <AlertCircle size={48} color="#ff3b30" />
+          </View>
+          
+          {/* Title */}
+          <Text style={styles.modalTitle}>Insufficient Coins</Text>
+          
+          {/* Message */}
+          <Text style={styles.modalMessage}>
+            You need <Text style={styles.coinsHighlight}>{coinsNeeded} more coins</Text> to purchase the{' '}
+            <Text style={styles.themeNameHighlight}>{themeName}</Text> theme.
+          </Text>
+          
+          {/* Coins Info */}
+          <View style={styles.coinsInfoContainer}>
+            <View style={styles.coinsRow}>
+              <Text style={styles.coinsLabel}>Required:</Text>
+              <View style={styles.coinsAmount}>
+                <Coins size={16} color="#FFD700" />
+                <Text style={styles.coinsValue}>{requiredCoins}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.coinsRow}>
+              <Text style={styles.coinsLabel}>You have:</Text>
+              <View style={styles.coinsAmount}>
+                <Coins size={16} color="#FFD700" />
+                <Text style={styles.coinsValue}>{currentCoins}</Text>
+              </View>
+            </View>
+            
+            <View style={[styles.coinsRow, styles.coinsNeededRow]}>
+              <Text style={styles.coinsNeededLabel}>Need:</Text>
+              <View style={styles.coinsAmount}>
+                <Coins size={16} color="#ff3b30" />
+                <Text style={styles.coinsNeededValue}>{coinsNeeded}</Text>
+              </View>
+            </View>
+          </View>
+          
+          {/* Earning Tips */}
+          <View style={styles.earningTipsContainer}>
+            <Text style={styles.earningTipsTitle}>Earn more coins by:</Text>
+            
+            <View style={styles.tipItem}>
+              <Gamepad2 size={18} color="#4facfe" />
+              <Text style={styles.tipText}>Playing Classic and Time Attack modes</Text>
+            </View>
+            
+            <View style={styles.tipItem}>
+              <Trophy size={18} color="#FFD700" />
+              <Text style={styles.tipText}>Completing daily challenges</Text>
+            </View>
+            
+            <View style={styles.tipItem}>
+              <Star size={18} color="#9c27b0" />
+              <Text style={styles.tipText}>Achieving high scores and combos</Text>
+            </View>
+          </View>
+          
+          {/* Action Button */}
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={onClose}
+          >
+            <Text style={styles.actionButtonText}>Got it!</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+const getRarityColor = (rarity: string): string => {
   switch (rarity) {
     case 'common': return '#9e9e9e';
     case 'rare': return '#2196f3';
@@ -19,7 +132,7 @@ const getRarityColor = (rarity: string) => {
   }
 };
 
-const getRarityIcon = (rarity: string) => {
+const getRarityIcon = (rarity: string): React.ReactElement | null => {
   switch (rarity) {
     case 'rare': return <Star size={16} color="#2196f3" />;
     case 'epic': return <Zap size={16} color="#9c27b0" />;
@@ -28,8 +141,10 @@ const getRarityIcon = (rarity: string) => {
   }
 };
 
-export default function Shop() {
+export default function Shop(): React.ReactElement {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showInsufficientCoinsModal, setShowInsufficientCoinsModal] = useState<boolean>(false);
+  const [selectedThemeForPurchase, setSelectedThemeForPurchase] = useState<Theme | null>(null);
   const { playSound } = useSound();
   
   // Use global theme context instead of local state
@@ -40,7 +155,7 @@ export default function Shop() {
     setCurrentTheme 
   } = useTheme();
 
-  const handleThemeSelect = (themeId: string) => {
+  const handleThemeSelect = useCallback((themeId: string): void => {
     // Play button sound for theme selection
     playSound('button', 0.7);
     
@@ -48,9 +163,9 @@ export default function Shop() {
     if (themeState.unlockedThemes.includes(themeId)) {
       setCurrentTheme(themeId);
     }
-  };
+  }, [playSound, themeState.unlockedThemes, setCurrentTheme]);
 
-  const handleThemePurchase = (themeId: string) => {
+  const handleThemePurchase = useCallback((themeId: string): void => {
     const theme = THEMES.find(t => t.id === themeId);
     if (theme && themeState.coins >= theme.cost) {
       // Play purchase sound
@@ -59,34 +174,47 @@ export default function Shop() {
       spendCoins(theme.cost);
       unlockTheme(themeId);
       setCurrentTheme(themeId);
-    } else {
-      // Play failed sound if not enough coins
+    } else if (theme) {
+      // Play failed sound and show insufficient coins modal
       playSound('failed', 0.5);
+      setSelectedThemeForPurchase(theme);
+      setShowInsufficientCoinsModal(true);
     }
-  };
+  }, [themeState.coins, playSound, spendCoins, unlockTheme, setCurrentTheme]);
 
-  const handleCategorySelect = (categoryId: string) => {
+  const handleInsufficientCoinsTap = useCallback((theme: Theme): void => {
+    playSound('failed', 0.4);
+    setSelectedThemeForPurchase(theme);
+    setShowInsufficientCoinsModal(true);
+  }, [playSound]);
+
+  const handleCategorySelect = useCallback((categoryId: string): void => {
     // Play button sound for category selection
     playSound('button', 0.6);
     setSelectedCategory(categoryId);
-  };
+  }, [playSound]);
 
-  const categories = [
+  const handleCloseModal = useCallback((): void => {
+    setShowInsufficientCoinsModal(false);
+    setSelectedThemeForPurchase(null);
+  }, []);
+
+  const categories = useMemo(() => [
     { id: 'all', name: 'All', icon: <ShoppingBag size={16} color="#fff" /> },
     { id: 'common', name: 'Common', icon: null },
     { id: 'rare', name: 'Rare', icon: <Star size={16} color="#2196f3" /> },
     { id: 'epic', name: 'Epic', icon: <Zap size={16} color="#9c27b0" /> },
     { id: 'legendary', name: 'Legendary', icon: <Crown size={16} color="#ff9800" /> },
-  ];
+  ], []);
 
-  const filteredThemes = THEMES.filter(theme => 
+  const filteredThemes = useMemo(() => THEMES.filter(theme => 
     selectedCategory === 'all' || theme.rarity === selectedCategory
-  );
+  ), [selectedCategory]);
 
-  const updatedThemes = filteredThemes.map(theme => ({
+  const updatedThemes = useMemo(() => filteredThemes.map(theme => ({
     ...theme,
     unlocked: themeState.unlockedThemes.includes(theme.id)
-  }));
+  })), [filteredThemes, themeState.unlockedThemes]);
 
   return (
     <View style={styles.container}>
@@ -150,11 +278,9 @@ export default function Shop() {
                 } else if (themeState.coins >= theme.cost) {
                   handleThemePurchase(theme.id);
                 } else {
-                  // Play failed sound if can't afford
-                  playSound('failed', 0.5);
+                  handleInsufficientCoinsTap(theme);
                 }
               }}
-              disabled={!theme.unlocked && themeState.coins < theme.cost}
             >
               {/* Rarity Border */}
               <View style={[
@@ -223,7 +349,7 @@ export default function Shop() {
                       ) : (
                         <TouchableOpacity 
                           style={styles.cantAffordContainer}
-                          onPress={() => playSound('failed', 0.4)}
+                          onPress={() => handleInsufficientCoinsTap(theme)}
                         >
                           <Coins size={14} color="#666" />
                           <Text style={styles.cantAffordText}>{theme.cost}</Text>
@@ -240,6 +366,15 @@ export default function Shop() {
         {/* Footer Spacing */}
         <View style={styles.footer} />
       </ScrollView>
+
+      {/* Insufficient Coins Modal */}
+      <InsufficientCoinsModal
+        visible={showInsufficientCoinsModal}
+        onClose={handleCloseModal}
+        requiredCoins={selectedThemeForPurchase?.cost || 0}
+        currentCoins={themeState.coins}
+        themeName={selectedThemeForPurchase?.name || ''}
+      />
     </View>
   );
 }
@@ -258,7 +393,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingTop: 10, // Account for status bar
+    paddingTop: 10,
     paddingBottom: 15,
   },
   headerLeft: {
@@ -445,5 +580,143 @@ const styles = StyleSheet.create({
   },
   footer: {
     height: 20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 350,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalBackground: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 20,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  alertIconContainer: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  coinsHighlight: {
+    color: '#ff3b30',
+    fontWeight: 'bold',
+  },
+  themeNameHighlight: {
+    color: '#4facfe',
+    fontWeight: 'bold',
+  },
+  coinsInfoContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  coinsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  coinsNeededRow: {
+    marginBottom: 0,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  coinsLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  coinsNeededLabel: {
+    fontSize: 14,
+    color: '#ff3b30',
+    fontWeight: 'bold',
+  },
+  coinsAmount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  coinsValue: {
+    fontSize: 14,
+    color: '#FFD700',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  coinsNeededValue: {
+    fontSize: 14,
+    color: '#ff3b30',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  earningTipsContainer: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  earningTipsTitle: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tipText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginLeft: 12,
+    flex: 1,
+  },
+  actionButton: {
+    backgroundColor: '#4facfe',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 120,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

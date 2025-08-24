@@ -62,7 +62,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   currentTheme === theme.id && styles.selectedThemeCard,
                 ]}
                 onPress={() => {
-                  playSound('purchase', 0.7);
+                  playSound('success', 0.7);
                   onThemeSelect(theme.id);
                 }}
               >
@@ -119,11 +119,11 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',
-    top: 0,
+    top: 80,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     zIndex: 1000,
   },

@@ -884,7 +884,7 @@ export const THEMES: Theme[] = [
       ['#f0fff0', '#f8fff8'] as const,
     ] as const,
     unlocked: false,
-    cost: 0, //1000
+    cost: 1000, //1000
     rarity: 'legendary',
     description: 'Ultimate prestige and brilliance'
   },
