@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   topUI: {
     position: 'absolute',
-    top: 35,
+    top: 10,
     left: 20,
     right: 20,
     flexDirection: 'row',

@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   challengePanel: {
     position: 'absolute',
-    top: 35,
+    top: 10,
     left: 20,
     right: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   comboContainer: {
     position: 'absolute',
-    top: 200,
+    top: 190,
     alignSelf: 'center',
     left: 0,
     right: 0,

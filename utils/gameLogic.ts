@@ -51,7 +51,7 @@ type DifficultyLevel = 'easy' | 'medium' | 'hard';
 // Pre-calculated positioning values
 const HALF_SCREEN_WIDTH = SCREEN_WIDTH / 2;
 const INITIAL_BLOCK_X = (SCREEN_WIDTH - INITIAL_BLOCK_WIDTH) / 2;
-const INITIAL_BLOCK_Y = SCREEN_HEIGHT - 160;
+const INITIAL_BLOCK_Y = SCREEN_HEIGHT - 160; 
 const COLOR_COUNT = COLORS.blocks.length;
 
 // Object pooling for frequently created objects

@@ -703,9 +703,9 @@ const styles = StyleSheet.create({
   },
   mainMenuContainer: {
     flex: 1,
-    paddingTop: 30,
+    paddingTop: 10,
     paddingHorizontal: 15,
-    paddingBottom: 20,
+    paddingBottom: 10, //20
   },
 
   // Enhanced Particles

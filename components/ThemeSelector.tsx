@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Coins, Check } from 'lucide-react-native';
 import { Theme } from '../types/game';
+import { useSound } from '@/contexts/SoundContext';
 
 interface ThemeSelectorProps {
   themes: Theme[]; // This will now only contain unlocked themes
@@ -22,6 +23,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onThemeSelect,
   onClose,
 }) => {
+  const { playSound } = useSound();
+
   if (!visible) return null;
 
   return (
@@ -31,7 +34,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
           style={styles.background}
         />
-        
+
         <View style={styles.header}>
           <Text style={styles.title}>Select Theme</Text>
           <View style={styles.coinsContainer}>
@@ -58,7 +61,10 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   styles.themeCard,
                   currentTheme === theme.id && styles.selectedThemeCard,
                 ]}
-                onPress={() => onThemeSelect(theme.id)}
+                onPress={() => {
+                  playSound('purchase', 0.7);
+                  onThemeSelect(theme.id);
+                }}
               >
                 <LinearGradient
                   colors={theme.backgroundColors}
@@ -74,13 +80,13 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     ))}
                   </View>
                 </LinearGradient>
-                
+
                 <View style={styles.themeInfo}>
                   <Text style={styles.themeName}>{theme.name}</Text>
                   <Text style={styles.themeDescription} numberOfLines={2}>
                     {theme.description || 'A beautiful theme for your tower'}
                   </Text>
-                  
+
                   {currentTheme === theme.id ? (
                     <View style={styles.selectedBadge}>
                       <Check size={16} color="#4facfe" />
@@ -98,7 +104,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
               </TouchableOpacity>
             ))
           )}
-          
+
           <View style={styles.shopPrompt}>
             <Text style={styles.shopPromptText}>
               Want more themes? Visit the Premium Shop!
@@ -275,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(79, 172, 254, 0.3)',
-    marginBottom:20
+    marginBottom: 20
   },
   shopPromptText: {
     color: '#4facfe',

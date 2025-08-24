@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    paddingTop: 35,
+    paddingTop: 10,
     paddingHorizontal: 24,
     paddingBottom: 20,
   },

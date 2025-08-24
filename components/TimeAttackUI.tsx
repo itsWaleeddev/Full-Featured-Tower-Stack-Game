@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   topRow: {
     position: 'absolute',
-    top: 35,
+    top: 10,
     left: 15,
     right: 15,
     gap:10,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     position: 'absolute',
-    top: 100,
+    top: 75,
     left: 20,
     right: 20,
     height: 4,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   comboContainer: {
     position: 'absolute',
-    top: 115,
+    top: 90,
     alignSelf: 'center',
     left: 0,
     right: 0,

@@ -8,7 +8,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Platform-specific optimizations
 // Platform-specific optimizations for high-speed gameplay
 const IS_ANDROID = Platform.OS === 'android';
-const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.95 : 1.0; // Slight reduction for Android stability
+const PERFORMANCE_MULTIPLIER = IS_ANDROID ? 0.9 : 1.0; // Slight reduction for Android stability //0.95
 
 export const GAME_CONFIG = {
   SCREEN_WIDTH,
