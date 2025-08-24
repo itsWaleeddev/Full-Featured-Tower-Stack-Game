@@ -39,29 +39,29 @@ const InsufficientCoinsModal: React.FC<InsufficientCoinsModalProps> = React.memo
             colors={['rgba(255, 59, 48, 0.1)', 'rgba(255, 59, 48, 0.05)']}
             style={styles.modalBackground}
           />
-          
+
           {/* Close Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
           >
             <X size={20} color="#fff" />
           </TouchableOpacity>
-          
+
           {/* Alert Icon */}
           <View style={styles.alertIconContainer}>
             <AlertCircle size={48} color="#ff3b30" />
           </View>
-          
+
           {/* Title */}
           <Text style={styles.modalTitle}>Insufficient Coins</Text>
-          
+
           {/* Message */}
           <Text style={styles.modalMessage}>
             You need <Text style={styles.coinsHighlight}>{coinsNeeded} more coins</Text> to purchase the{' '}
             <Text style={styles.themeNameHighlight}>{themeName}</Text> theme.
           </Text>
-          
+
           {/* Coins Info */}
           <View style={styles.coinsInfoContainer}>
             <View style={styles.coinsRow}>
@@ -71,7 +71,7 @@ const InsufficientCoinsModal: React.FC<InsufficientCoinsModalProps> = React.memo
                 <Text style={styles.coinsValue}>{requiredCoins}</Text>
               </View>
             </View>
-            
+
             <View style={styles.coinsRow}>
               <Text style={styles.coinsLabel}>You have:</Text>
               <View style={styles.coinsAmount}>
@@ -79,7 +79,7 @@ const InsufficientCoinsModal: React.FC<InsufficientCoinsModalProps> = React.memo
                 <Text style={styles.coinsValue}>{currentCoins}</Text>
               </View>
             </View>
-            
+
             <View style={[styles.coinsRow, styles.coinsNeededRow]}>
               <Text style={styles.coinsNeededLabel}>Need:</Text>
               <View style={styles.coinsAmount}>
@@ -88,29 +88,29 @@ const InsufficientCoinsModal: React.FC<InsufficientCoinsModalProps> = React.memo
               </View>
             </View>
           </View>
-          
+
           {/* Earning Tips */}
           <View style={styles.earningTipsContainer}>
             <Text style={styles.earningTipsTitle}>Earn more coins by:</Text>
-            
+
             <View style={styles.tipItem}>
               <Gamepad2 size={18} color="#4facfe" />
               <Text style={styles.tipText}>Playing Classic and Time Attack modes</Text>
             </View>
-            
+
             <View style={styles.tipItem}>
               <Trophy size={18} color="#FFD700" />
               <Text style={styles.tipText}>Completing daily challenges</Text>
             </View>
-            
+
             <View style={styles.tipItem}>
               <Star size={18} color="#9c27b0" />
               <Text style={styles.tipText}>Achieving high scores and combos</Text>
             </View>
           </View>
-          
+
           {/* Action Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={onClose}
           >
@@ -141,24 +141,117 @@ const getRarityIcon = (rarity: string): React.ReactElement | null => {
   }
 };
 
+// Component for Neon Theme Color Dots
+const NeonColorDots: React.FC<{ blockColors: readonly string[][] }> = React.memo(({ blockColors }) => {
+  const dots = useMemo(() => {
+    // 12 strategically positioned dots - not random, designed for visual appeal
+    const positions = [
+      // Top area - cascading effect (5 dots)
+      { x: 20, y: 8, size: 5 },    // Top left
+      { x: 80, y: 11, size: 6 },    // Top center-left
+      { x: 110, y: 10, size: 5 },    // Top center-right
+      { x: 140, y: 8, size: 5 },   // Top right
+      { x: 50, y: 9, size: 5 },   // Top secondary cascade
+
+      // Left side (3 dots)
+      { x: 21, y: 35, size: 5 },   // Mid-left
+      { x: 26, y: 60, size: 5 },   // Lower-left
+      //{ x: 18, y: 75, size: 5 },    // Bottom-left
+
+      // Right side (3 dots)
+      { x: 136, y: 40, size: 5 },  // Mid-right
+      { x: 136, y: 65, size: 5 },  // Lower-right
+      //{ x: 138, y: 85, size: 3 },  // Bottom-right
+
+      // Bottom accent (1 dot)
+      { x: 20, y: 90, size: 5 },   // Bottom center
+      { x: 80, y: 92, size: 5 },
+      { x: 112, y: 93, size: 6 },
+      { x: 50, y: 93, size: 5 },
+      { x: 140, y: 95, size: 5 },
+    ];
+
+    // Pre-calculate all dot properties
+    return positions.map((position, index) => {
+      const colorIndex = index % blockColors.length;
+      const colors = blockColors[colorIndex] || ['#fff', '#fff'];
+      const gradientColors = colors.length >= 2 ? colors : [colors[0] || '#fff', colors[0] || '#fff'];
+
+      // Opacity based on position and size for depth
+      // Top dots are more prominent, side dots are subtle, bottom is accent
+      let opacity = 0.7;
+      if (position.y <= 15) opacity = 0.85; // Top area - more visible
+      else if (position.x <= 20 || position.x >= 125) opacity = 0.75; // Sides - medium
+      else opacity = 0.8; // Bottom accent
+
+      // Adjust opacity by size for additional depth
+      opacity += (position.size / 20);
+      opacity = Math.min(0.9, opacity);
+
+      return {
+        colors: gradientColors as [string, string, ...string[]],
+        style: {
+          position: 'absolute' as const,
+          left: position.x,
+          top: position.y,
+          width: position.size,
+          height: position.size,
+          borderRadius: position.size / 2,
+          overflow: 'hidden' as const,
+          opacity,
+        }
+      };
+    });
+  }, [blockColors]);
+
+  return (
+    <View style={neonDotsContainerStyle}>
+      {dots.map((dot, index) => (
+        <View key={index} style={dot.style}>
+          <LinearGradient
+            colors={dot.colors}
+            style={neonDotGradientStyle}
+            start={gradientStart}
+            end={gradientEnd}
+          />
+        </View>
+      ))}
+    </View>
+  );
+});
+
+// Pre-defined static styles
+const neonDotsContainerStyle = {
+  ...StyleSheet.absoluteFillObject,
+  zIndex: 0,
+} as const;
+
+const neonDotGradientStyle = {
+  flex: 1,
+  borderRadius: 50,
+} as const;
+
+const gradientStart = { x: 0, y: 0 } as const;
+const gradientEnd = { x: 1, y: 1 } as const;
+
 export default function Shop(): React.ReactElement {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showInsufficientCoinsModal, setShowInsufficientCoinsModal] = useState<boolean>(false);
   const [selectedThemeForPurchase, setSelectedThemeForPurchase] = useState<Theme | null>(null);
   const { playSound } = useSound();
-  
+
   // Use global theme context instead of local state
-  const { 
-    themeState, 
-    spendCoins, 
-    unlockTheme, 
-    setCurrentTheme 
+  const {
+    themeState,
+    spendCoins,
+    unlockTheme,
+    setCurrentTheme
   } = useTheme();
 
   const handleThemeSelect = useCallback((themeId: string): void => {
     // Play button sound for theme selection
     playSound('button', 0.7);
-    
+
     // Only allow selection if theme is unlocked
     if (themeState.unlockedThemes.includes(themeId)) {
       setCurrentTheme(themeId);
@@ -170,7 +263,7 @@ export default function Shop(): React.ReactElement {
     if (theme && themeState.coins >= theme.cost) {
       // Play purchase sound
       playSound('purchase', 0.8);
-      
+
       spendCoins(theme.cost);
       unlockTheme(themeId);
       setCurrentTheme(themeId);
@@ -207,7 +300,7 @@ export default function Shop(): React.ReactElement {
     { id: 'legendary', name: 'Legendary', icon: <Crown size={16} color="#ff9800" /> },
   ], []);
 
-  const filteredThemes = useMemo(() => THEMES.filter(theme => 
+  const filteredThemes = useMemo(() => THEMES.filter(theme =>
     selectedCategory === 'all' || theme.rarity === selectedCategory
   ), [selectedCategory]);
 
@@ -222,7 +315,7 @@ export default function Shop(): React.ReactElement {
         colors={['rgba(0, 0, 0, 0.95)', 'rgba(0, 0, 0, 0.8)']}
         style={styles.background}
       />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -236,8 +329,8 @@ export default function Shop(): React.ReactElement {
       </View>
 
       {/* Category Filter */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.categoryContainer}
         contentContainerStyle={styles.categoryContent}
@@ -287,12 +380,17 @@ export default function Shop(): React.ReactElement {
                 styles.rarityBorder,
                 { borderColor: getRarityColor(theme.rarity || 'common') }
               ]} />
-              
+
               {/* Theme Preview */}
               <LinearGradient
                 colors={theme.backgroundColors}
                 style={styles.themePreview}
               >
+                {/* Add Neon Color Dots only for neon theme */}
+                {theme.id === 'neon' && (
+                  <NeonColorDots blockColors={theme.blockColors as readonly string[][]} />
+                )}
+
                 <View style={styles.blockPreview}>
                   {theme.blockColors.slice(0, 6).map((colors, index) => (
                     <LinearGradient
@@ -302,7 +400,7 @@ export default function Shop(): React.ReactElement {
                     />
                   ))}
                 </View>
-                
+
                 {/* Locked Overlay */}
                 {!theme.unlocked && (
                   <View style={styles.lockedOverlay}>
@@ -310,18 +408,18 @@ export default function Shop(): React.ReactElement {
                   </View>
                 )}
               </LinearGradient>
-              
+
               {/* Theme Info */}
               <View style={styles.themeInfo}>
                 <View style={styles.themeHeader}>
                   <Text style={styles.themeName}>{theme.name}</Text>
                   {getRarityIcon(theme.rarity || 'common')}
                 </View>
-                
+
                 <Text style={styles.themeDescription} numberOfLines={2}>
                   {theme.description}
                 </Text>
-                
+
                 {/* Status/Action */}
                 <View style={styles.themeAction}>
                   {themeState.currentTheme === theme.id ? (
@@ -347,7 +445,7 @@ export default function Shop(): React.ReactElement {
                           <Text style={styles.buyButtonText}>{theme.cost}</Text>
                         </TouchableOpacity>
                       ) : (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.cantAffordContainer}
                           onPress={() => handleInsufficientCoinsTap(theme)}
                         >
@@ -362,7 +460,7 @@ export default function Shop(): React.ReactElement {
             </TouchableOpacity>
           ))}
         </View>
-        
+
         {/* Footer Spacing */}
         <View style={styles.footer} />
       </ScrollView>
@@ -501,6 +599,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   themeInfo: {
     padding: 12,
   },

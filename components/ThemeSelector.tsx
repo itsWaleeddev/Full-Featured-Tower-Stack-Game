@@ -5,6 +5,83 @@ import { Coins, Check } from 'lucide-react-native';
 import { Theme } from '../types/game';
 import { useSound } from '@/contexts/SoundContext';
 
+// Optimized Neon Dots Component for ThemeSelector - 6 well-positioned dots
+const NeonPreviewDots: React.FC<{ blockColors: readonly string[][] }> = React.memo(({ blockColors }) => {
+  const dots = React.useMemo(() => {
+    // 6 strategically positioned dots for theme preview (80x80 area)
+    const positions = [
+      // Top area - mini cascade (3 dots)
+      { x: 15, y: 7, size: 4 },   // Top left
+      { x: 40, y: 9, size: 4 },   // Top center
+      { x: 65, y: 8, size: 5 },   // Top right
+      
+      // Sides - framing (2 dots)
+      { x: 5, y: 35, size: 4 },   // Mid left
+      { x: 70, y: 40, size: 4 },  // Mid right
+      
+      // Bottom accent (1 dot)
+      { x: 15, y: 70, size: 4 },  // Bottom center
+      { x: 42, y: 66, size: 4 },
+      { x: 65, y: 68, size: 4 }
+    ];
+    
+    return positions.map((position, index) => {
+      const colorIndex = index % blockColors.length;
+      const colors = blockColors[colorIndex] || ['#fff', '#fff'];
+      const gradientColors = colors.length >= 2 ? colors : [colors[0] || '#fff', colors[0] || '#fff'];
+      
+      // Opacity for theme preview - more subtle
+      let opacity = 0.6;
+      if (position.y <= 10) opacity = 0.7; // Top dots slightly more visible
+      else if (position.x <= 10 || position.x >= 65) opacity = 0.65; // Side dots
+      else opacity = 0.68; // Bottom accent
+      
+      return {
+        colors: gradientColors as [string, string, ...string[]],
+        style: {
+          position: 'absolute' as const,
+          left: position.x,
+          top: position.y,
+          width: position.size,
+          height: position.size,
+          borderRadius: position.size / 2,
+          overflow: 'hidden' as const,
+          opacity,
+        }
+      };
+    });
+  }, [blockColors]);
+
+  return (
+    <View style={neonPreviewDotsStyle}>
+      {dots.map((dot, index) => (
+        <View key={index} style={dot.style}>
+          <LinearGradient
+            colors={dot.colors}
+            style={neonDotPreviewStyle}
+            start={gradientStart}
+            end={gradientEnd}
+          />
+        </View>
+      ))}
+    </View>
+  );
+});
+
+// Pre-defined styles for performance
+const neonPreviewDotsStyle = {
+  ...StyleSheet.absoluteFillObject,
+  zIndex: 0,
+} as const;
+
+const neonDotPreviewStyle = {
+  flex: 1,
+  borderRadius: 50,
+} as const;
+
+const gradientStart = { x: 0, y: 0 } as const;
+const gradientEnd = { x: 1, y: 1 } as const;
+
 interface ThemeSelectorProps {
   themes: Theme[]; // This will now only contain unlocked themes
   visible: boolean;
@@ -70,6 +147,11 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                   colors={theme.backgroundColors}
                   style={styles.themePreview}
                 >
+                  {/* Add Neon Preview Dots only for neon theme */}
+                  {theme.id === 'neon' && (
+                    <NeonPreviewDots blockColors={theme.blockColors as readonly string[][]} />
+                  )}
+                  
                   <View style={styles.blockPreview}>
                     {theme.blockColors.slice(0, 4).map((colors, index) => (
                       <LinearGradient
@@ -222,12 +304,14 @@ const styles = StyleSheet.create({
     height: 80,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   blockPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     width: 40,
     height: 40,
+    zIndex: 1, // Ensure blocks appear above dots
   },
   miniBlock: {
     width: 18,

@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 10,
     paddingHorizontal: 15,
-    paddingBottom: 10, //20
+    paddingBottom: 12, //20
   },
 
   // Enhanced Particles
@@ -826,6 +826,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     opacity: 0.85,
+    marginTop:-6,
     fontWeight: '600',
     letterSpacing: 0.8,
     margin: 5,

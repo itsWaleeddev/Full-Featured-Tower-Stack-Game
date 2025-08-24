@@ -98,7 +98,7 @@ function getThemeTabBarColors(theme: any) {
     case 'golden':
       backgroundColor = '#2a2010';
       borderColor = '#4a4030';
-      activeTintColor = theme.blockColors[0][1];
+      activeTintColor = theme.blockColors[0][0];
       inactiveTintColor = '#8a7050';
       break;
     
